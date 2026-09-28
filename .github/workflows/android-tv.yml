@@ -50,8 +50,6 @@ jobs:
           # AGP 8.13 requires 17+; 21 is the current LTS.
           java-version: '21'
 
-      - uses: android-actions/setup-android@v3
-
       - name: Install the Capacitor CLI (build-time only)
         # Version is read from the installed @capacitor/core so the CLI and the
         # runtime plugin can never drift apart, and so bumping the dependency in
@@ -78,9 +76,49 @@ jobs:
       - name: Make it an Android TV app
         run: node scripts/prepare-android-tv.mjs
 
+      - name: Set up the Android SDK
+        # Replaces android-actions/setup-android, which failed this workflow's
+        # first run at the point it was the only failing step — before any of
+        # the app's own code was involved. The hosted runner already ships the
+        # SDK, so all that is actually needed is to accept the licences and
+        # install the packages this project asks for. Depending on the
+        # preinstalled SDK removes a third-party action from the critical path
+        # rather than replacing it with another.
+        #
+        # It runs after `cap add android` so the versions can be read out of the
+        # generated project rather than hardcoded here. A Capacitor upgrade that
+        # moves compileSdk then cannot leave this building against the wrong
+        # platform: nothing is repeated in two places to drift.
+        run: |
+          set -euo pipefail
+
+          if [ -z "${ANDROID_HOME:-}" ] || [ ! -d "$ANDROID_HOME/cmdline-tools" ]; then
+            echo "::error::No Android SDK on this runner (ANDROID_HOME='${ANDROID_HOME:-}')"
+            exit 1
+          fi
+
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          [ -x "$SDKMANAGER" ] || SDKMANAGER="$(command -v sdkmanager)"
+          echo "Using SDK at $ANDROID_HOME via $SDKMANAGER"
+
+          COMPILE=$(sed -n 's/^ *compileSdkVersion *= *\([0-9][0-9]*\).*/\1/p' android/variables.gradle)
+          [ -n "$COMPILE" ] || { echo "::error::Could not read compileSdkVersion"; exit 1; }
+          echo "Project asks for compileSdk $COMPILE"
+
+          # `yes` answers the prompt. Without this, every sdkmanager call below
+          # fails on an unaccepted licence, and `yes` itself dies of SIGPIPE the
+          # moment sdkmanager stops reading, so the exit status is discarded.
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+
+          "$SDKMANAGER" --install "platform-tools" "platforms;android-$COMPILE"
+
+          # Best effort: AGP downloads its own build-tools when the licences are
+          # accepted, so a package name that does not exist must not fail the
+          # build. The verify step below uses whatever did land.
+          "$SDKMANAGER" --install "build-tools;$COMPILE.0.0" \
+            || echo "::warning::build-tools;$COMPILE.0.0 unavailable, leaving it to AGP"
+
       - name: Point Gradle at the SDK
-        # ANDROID_HOME is set by setup-android, but AGP reads sdk.dir from this
-        # file, so it is written explicitly rather than relied upon.
         run: echo "sdk.dir=$ANDROID_HOME" > android/local.properties
 
       - name: Build the debug APK

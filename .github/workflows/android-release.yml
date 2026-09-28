@@ -83,8 +83,6 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - uses: android-actions/setup-android@v3
-
       - name: Install the Capacitor CLI (build-time only)
         run: |
           CAP_VERSION=$(node -p "require('./node_modules/@capacitor/core/package.json').version")
@@ -103,6 +101,32 @@ jobs:
 
       - name: Make it an Android TV app
         run: node scripts/prepare-android-tv.mjs
+
+      - name: Set up the Android SDK
+        # Same approach as android-tv.yml: the runner image already ships the
+        # SDK, so this only accepts the licences and installs what the generated
+        # project asks for. No third-party setup action on the critical path.
+        run: |
+          set -euo pipefail
+
+          if [ -z "${ANDROID_HOME:-}" ] || [ ! -d "$ANDROID_HOME/cmdline-tools" ]; then
+            echo "::error::No Android SDK on this runner (ANDROID_HOME='${ANDROID_HOME:-}')"
+            exit 1
+          fi
+
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          [ -x "$SDKMANAGER" ] || SDKMANAGER="$(command -v sdkmanager)"
+          echo "Using SDK at $ANDROID_HOME via $SDKMANAGER"
+
+          COMPILE=$(sed -n 's/^ *compileSdkVersion *= *\([0-9][0-9]*\).*/\1/p' android/variables.gradle)
+          [ -n "$COMPILE" ] || { echo "::error::Could not read compileSdkVersion"; exit 1; }
+          echo "Project asks for compileSdk $COMPILE"
+
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+
+          "$SDKMANAGER" --install "platform-tools" "platforms;android-$COMPILE"
+          "$SDKMANAGER" --install "build-tools;$COMPILE.0.0" \
+            || echo "::warning::build-tools;$COMPILE.0.0 unavailable, leaving it to AGP"
 
       - name: Point Gradle at the SDK
         run: echo "sdk.dir=$ANDROID_HOME" > android/local.properties
