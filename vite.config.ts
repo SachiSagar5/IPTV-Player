@@ -4,16 +4,29 @@ import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath, URL } from 'node:url';
 
-export default defineConfig({
-  base: './',
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-    },
-  },
-  plugins: [
-    react(),
-    tailwindcss(),
+/**
+ * Are we building the native Android TV bundle?
+ *
+ * The web and native builds come from the same source but not the same output.
+ * In a WebView the bundle is served from a local origin and the app is already
+ * on the device, so a service worker has nothing to do but occupy space: it
+ * precaches a shell that cannot go stale, and it competes with the app's own
+ * IndexedDB poster cache. `vite-plugin-pwa` is therefore dropped for the native
+ * target, which also keeps `sw.js` and the Workbox runtime (~5 kB) out of the
+ * APK entirely.
+ *
+ * `injectRegister: null` below means the web build also never registers a
+ * service worker — the plugin emits the files but the app opts out. That is the
+ * pre-existing behaviour and this does not change it.
+ */
+const isNativeBuild = process.env.CAPACITOR_BUILD === 'true';
+
+/**
+ * PWA plugin, dropped for the native bundle. See the note above.
+ */
+const pwaPlugins = isNativeBuild
+  ? []
+  : [
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: null,
@@ -71,6 +84,19 @@ export default defineConfig({
       },
       devOptions: { enabled: false },
     }),
+  ];
+
+export default defineConfig({
+  base: './',
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+  plugins: [
+    react(),
+    tailwindcss(),
+    ...pwaPlugins,
   ],
   worker: {
     format: 'es',

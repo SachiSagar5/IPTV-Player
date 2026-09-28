@@ -7,11 +7,15 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:native": "CAPACITOR_BUILD=true tsc -b && CAPACITOR_BUILD=true vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit false --emitDeclarationOnly false",
-    "lint": "tsc -b"
+    "lint": "tsc -b",
+    "android:prepare": "node scripts/prepare-android-tv.mjs"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.2",
     "@tanstack/react-virtual": "^3.13.12",
     "hls.js": "^1.6.13",
     "react": "^19.1.1",
