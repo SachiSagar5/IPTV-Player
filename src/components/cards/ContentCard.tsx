@@ -31,6 +31,27 @@ const SIZES: Record<CardVariant, { w: number; h: number; className: string }> = 
   wide: { w: 480, h: 270, className: 'w-[200px] sm:w-[248px] lg:w-[288px]' },
 };
 
+/**
+ * Widths for cards inside a horizontal row, ~1.3x `SIZES`.
+ *
+ * A row and a grid want different sizes from the same card. In a grid the card
+ * is one of many and is sized by its `1fr` column, so a card that is generously
+ * wide just eats viewport. In a horizontal row the artwork *is* the browse
+ * surface and the row scrolls, so there is no cost to showing it larger.
+ *
+ * Kept as a separate table rather than a multiplier so the breakpoints stay
+ * tuned per variant: a square channel tile and a 2:3 poster cannot both be
+ * scaled by the same factor and still fit the same number of cards per screen.
+ *
+ * Intrinsic `w`/`h` are deliberately untouched — they only carry the aspect
+ * ratio, and the browser scales the artwork down to fit the rendered width.
+ */
+export const LARGE_CARD_WIDTH: Record<CardVariant, string> = {
+  poster: 'w-[164px] sm:w-[210px] lg:w-[246px]',
+  channel: 'w-[132px] sm:w-[168px] lg:w-[196px]',
+  wide: 'w-[268px] sm:w-[332px] lg:w-[384px]',
+};
+
 export interface ContentCardProps {
   item: ContentItem;
   variant?: CardVariant;
@@ -43,6 +64,13 @@ export interface ContentCardProps {
   total?: number;
   onToggleFavorite?: (item: ContentItem) => void;
   priority?: boolean;
+  /**
+   * Use the larger row widths (`LARGE_CARD_WIDTH`) instead of `SIZES`.
+   *
+   * For horizontal rows, where the artwork is the point. Ignored when `fill` is
+   * set, since a grid cell is fluid and has no business asking for a width.
+   */
+  large?: boolean;
   /**
    * Stretch to the grid cell instead of using the fixed row width.
    *
@@ -66,6 +94,7 @@ export const ContentCard = memo(function ContentCard({
   onToggleFavorite,
   priority = false,
   fill = false,
+  large = false,
   className = '',
 }: ContentCardProps) {
   const size = SIZES[variant];
@@ -121,7 +150,7 @@ export const ContentCard = memo(function ContentCard({
       aria-label={label}
       {...(index != null && total != null ? { 'aria-posinset': index + 1, 'aria-setsize': total } : {})}
       className={`card group/card relative block shrink-0 rounded-card outline-offset-4 ${
-        fill ? 'w-full' : size.className
+        fill ? 'w-full' : large ? LARGE_CARD_WIDTH[variant] : size.className
       } ${className}`}
     >
       <div className="card-art card-hairline relative overflow-hidden rounded-card bg-ink-850 shadow-card transition-[transform,box-shadow] duration-300 ease-settle group-hover/card:-translate-y-2 group-hover/card:shadow-lift group-focus-visible/card:-translate-y-2 group-focus-visible/card:shadow-lift">

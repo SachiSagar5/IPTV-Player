@@ -16,6 +16,7 @@
 import { useCallback, useMemo, useRef } from 'react';
 import { Hero } from '@/components/cards/Hero';
 import { ContentRow, RowShell } from '@/components/cards/ContentRow';
+import { LARGE_CARD_WIDTH } from '@/components/cards/ContentCard';
 import { SeriesCard } from '@/components/cards/SeriesCard';
 import { PageEnd } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/common/States';
@@ -121,10 +122,12 @@ export default function HomePage() {
   const series = seriesIndex.groups.slice(0, SERIES_LIMIT);
 
   // One stable function for the whole row, so the Series cards only re-render
-  // when the row's contents change.
+  // when the row's contents change. `SeriesCard` has no width of its own, so it
+  // takes the row card width from the same table `ContentCard` uses — otherwise
+  // this row would be the one card size on the page that did not change.
   const renderSeries = useCallback(
     (entry: SeriesGroup, index: number) => (
-      <div className="w-[132px] sm:w-[164px] lg:w-[190px]">
+      <div className={LARGE_CARD_WIDTH.poster}>
         <SeriesCard series={entry} index={index} total={series.length} />
       </div>
     ),
@@ -189,6 +192,7 @@ export default function HomePage() {
       {continueWatching.length > 0 ? (
         <ContentRow
           title="Continue watching"
+          large
           staggerIndex={ENTRY.continueWatching}
           items={continueWatching}
           progressById={progressById}
@@ -200,6 +204,7 @@ export default function HomePage() {
       {favorites.length > 0 ? (
         <ContentRow
           title="My List"
+          large
           staggerIndex={ENTRY.favorites}
           items={favorites}
           href={ROUTES.myList}
@@ -212,6 +217,7 @@ export default function HomePage() {
       {recent.length > 0 && continueWatching.length === 0 ? (
         <ContentRow
           title="Recently watched"
+          large
           staggerIndex={ENTRY.recent}
           items={recent}
           progressById={progressById}
@@ -235,6 +241,7 @@ export default function HomePage() {
       {buckets.movie.length > 0 ? (
         <ContentRow
           title="Movies"
+          large
           staggerIndex={ENTRY.movies}
           items={buckets.movie.slice(0, ROW_LIMIT)}
           href={ROUTES.movies}
@@ -247,6 +254,7 @@ export default function HomePage() {
       {live.length > 0 ? (
         <ContentRow
           title="Live channels"
+          large
           staggerIndex={ENTRY.live}
           items={live.slice(0, ROW_LIMIT)}
           variant="channel"
@@ -260,6 +268,7 @@ export default function HomePage() {
       {buckets.series.length > 0 && series.length === 0 ? (
         <ContentRow
           title="Episodes"
+          large
           staggerIndex={ENTRY.episodes}
           items={buckets.series.slice(0, ROW_LIMIT)}
           href={ROUTES.series}

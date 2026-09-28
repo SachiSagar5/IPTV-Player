@@ -234,6 +234,8 @@ export interface ContentRowProps {
   onToggleFavorite?: (item: ContentItem) => void;
   priority?: boolean;
   staggerIndex?: number;
+  /** Renders cards at the larger row widths; see `LARGE_CARD_WIDTH`. */
+  large?: boolean;
 }
 
 export const ContentRow = memo(function ContentRow({
@@ -246,6 +248,7 @@ export const ContentRow = memo(function ContentRow({
   onToggleFavorite,
   priority = false,
   staggerIndex = 0,
+  large = false,
 }: ContentRowProps) {
   // `emptyMessage` / `renderItem` are no longer part of this component's API: a
   // row of anything that is not a playlist entry uses `RowShell` directly.
@@ -260,6 +263,7 @@ export const ContentRow = memo(function ContentRow({
         <ContentCard
           item={item}
           variant={variant}
+          large={large}
           progress={progressById?.get(item.id)}
           favorite={favoriteIds?.has(item.id) ?? false}
           onToggleFavorite={onToggleFavorite}
