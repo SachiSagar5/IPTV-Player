@@ -10,7 +10,7 @@
  * quality comes from the manifest's level list, audio from its audio groups,
  * subtitles from its subtitle groups. Nothing is invented.
  */
-import { memo, useCallback, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { ContentItem } from '@/types';
 import { usePlayerSelector } from '@/store/playerStore';
@@ -20,6 +20,8 @@ import { formatTime } from '@/utils/format';
 import { cleanTitle } from '@/services/m3u/categorize';
 import { RatingBadge } from '@/components/common/RatingBadge';
 import { useItemRating } from '@/hooks/useRating';
+import { useDpadNavigation } from '@/hooks/useDpadNavigation';
+import { navCandidates } from '@/hooks/navCandidates';
 
 export interface PlayerControlsProps {
   visible: boolean;
@@ -88,6 +90,13 @@ export const PlayerControls = memo(function PlayerControls({
   const [menu, setMenu] = useState<'none' | 'quality' | 'audio' | 'subs' | 'speed'>('none');
   const barRef = useRef<HTMLDivElement>(null);
 
+  // The bar is a horizontal strip of controls, which is exactly the row shape
+  // the spatial D-pad already understands, so it needs no bespoke key handling —
+  // only the `data-nav` stops below and a container to scope them to. `loop` is
+  // off because a control bar that wraps from "fullscreen" back to "play" is
+  // disorienting; running off the end falls through to the page instead.
+  useDpadNavigation(barRef, { loop: false });
+
   const closeMenu = useCallback(() => setMenu('none'), []);
   const isPlaying = status === 'playing' || status === 'buffering';
   const seekingDisabled = isLive;
@@ -123,6 +132,7 @@ export const PlayerControls = memo(function PlayerControls({
   return (
     <div
       ref={barRef}
+      data-player-controls=""
       className={`absolute inset-x-0 bottom-0 z-20 select-none transition-opacity duration-200 ${
         visible ? 'opacity-100' : 'pointer-events-none opacity-0'
       }`}
@@ -152,6 +162,7 @@ export const PlayerControls = memo(function PlayerControls({
           {canGoBack ? (
             <button
               type="button"
+              data-nav
               onClick={onBack}
               aria-label="Back"
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/85 transition-colors hover:bg-white/10 hover:text-white"
@@ -188,6 +199,7 @@ export const PlayerControls = memo(function PlayerControls({
                 max={Math.max(1, duration)}
                 step={0.1}
                 value={Math.min(currentTime, duration || 0)}
+                data-nav
                 onChange={(event) => onSeek(Number(event.target.value))}
                 aria-label="Seek"
                 aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
@@ -440,6 +452,7 @@ function ControlButton({
       onClick={onClick}
       title={label}
       aria-label={label}
+      data-nav
       className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
         primary
           ? 'bg-white text-black hover:bg-white/85'
@@ -473,6 +486,7 @@ function MenuButton({
       title={label}
       aria-label={label}
       aria-expanded={active}
+      data-nav
       className={`inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition-colors ${
         active ? 'bg-white/20 text-white' : 'text-white/85 hover:bg-white/10 hover:text-white'
       }`}
@@ -492,8 +506,27 @@ function PlayerMenu({
   children: ReactNode;
   onClose: () => void;
 }) {
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // A menu is a vertical list, so it gets its own D-pad container: Up/Down step
+  // through the items. It is nested inside the control bar's container, and
+  // because keydown bubbles from the inside out, the menu resolves a press
+  // first and the bar only sees what the menu could not handle.
+  useDpadNavigation(menuRef, { loop: false });
+
+  // Opening a menu has to land focus inside it. Without this the OK button
+  // would open a list the remote then cannot reach, since the trigger keeps
+  // focus and the menu is rendered as a sibling overlay.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      navCandidates(menuRef.current ?? document)[0]?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   return (
     <div
+      ref={menuRef}
       role="menu"
       aria-label={label}
       className="animate-scale-in absolute right-3 bottom-20 z-30 max-h-[50vh] min-w-44 origin-bottom-right overflow-y-auto rounded-lg border border-white/10 bg-black/85 p-1 shadow-lift backdrop-blur-md sm:right-5"
@@ -528,6 +561,7 @@ function MenuItem({
       type="button"
       role="menuitemradio"
       aria-checked={active}
+      data-nav
       onClick={onClick}
       className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors ${
         active ? 'text-accent-300' : 'text-white/85 hover:bg-white/10'

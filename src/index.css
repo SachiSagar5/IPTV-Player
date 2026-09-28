@@ -676,3 +676,67 @@
   transition-delay: 0s !important;
   scroll-behavior: auto !important;
 }
+
+/* ---------------------------------------------------------------------------
+   10-foot UI — Android TV / Google TV / Fire TV only.
+
+   Everything here is gated on `[data-tv]`, which `markPlatform()` sets only when
+   the native shell is present. A browser build therefore has none of it, and
+   the desktop and mobile layouts are byte-for-byte what they were.
+
+   The theme is "what must change when there is no pointer and the viewer is
+   across the room":
+
+     1. The focus ring stops being a 2px outline. At 4K and ten feet that is
+        about two physical pixels, and it is the *only* thing telling the user
+        where they are, so it gets a real glow and a scale-up.
+     2. The focus settle is shortened. 650ms per card means a user holding Right
+        is still watching the previous card finish arriving.
+     3. The ambient blur pools and the infinite loops stop. A 1920x1080
+        `blur(120px)` composited layer, plus a Ken Burns pan and a per-card live
+        pulse, is a real cost on the GPU of an entry-level TV box — for
+        decoration, while the user is trying to read a channel name.
+--------------------------------------------------------------------------- */
+[data-tv] {
+  /* Slightly larger base type: readable at three metres, where 14px is not. */
+  font-size: 17px;
+}
+
+[data-tv] :focus-visible {
+  outline: 3px solid var(--color-accent-300);
+  outline-offset: 3px;
+  border-radius: 6px;
+  /* The glow does the work of "where am I" from further away than the ring is
+     legible. It is drawn outside the element so it never shifts layout. */
+  box-shadow:
+    0 0 0 6px rgb(var(--accent-400-rgb) / 0.22),
+    0 0 22px 4px rgb(var(--accent-400-rgb) / 0.45);
+}
+
+/* The card choreography already scales on focus; on a TV it should arrive
+   faster and slightly larger, because a bigger target is easier to track with
+   a thumbstick-sized remote. */
+[data-tv] .card:focus-visible .media-img {
+  transform: scale(1.09);
+  transition-duration: 180ms;
+}
+
+[data-tv] .card:focus-visible .card-glow {
+  opacity: 1;
+}
+
+/* Ambient decoration off. `body` keeps its flat static wash, so the page is
+   still lit — it just stops moving. */
+[data-tv] .animate-drift-a,
+[data-tv] .animate-drift-b,
+[data-tv] .animate-ken-burns,
+[data-tv] .sheen,
+[data-tv] .live-pulse {
+  animation: none;
+}
+
+/* `background-attachment: fixed` forces a full-viewport repaint on scroll,
+   which is the most expensive thing in the stylesheet on a weak GPU. */
+[data-tv] body {
+  background-attachment: scroll;
+}

@@ -12,6 +12,13 @@
  *
  * Controls auto-hide after 3s of inactivity while playing, and reappear on any
  * key or pointer movement. When they are hidden, a single tap toggles them back.
+ *
+ * The one rule this hook adds for a remote: if focus is sitting on a control in
+ * the bar, the D-pad owns the arrow keys and this hook does not. Otherwise a
+ * single press on a focused "forward 10 seconds" button would both move focus
+ * along the bar *and* seek, because the two listeners are independent. OK
+ * activation still works — that is the browser's own behaviour for a focused
+ * `<button>`, which is exactly what a remote's centre key produces.
  */
 import { useCallback, useEffect, useRef } from 'react';
 import { playerStore, usePlayerSelector } from '@/store/playerStore';
@@ -19,6 +26,9 @@ import { playerStore, usePlayerSelector } from '@/store/playerStore';
 const AUTO_HIDE_MS = 3000;
 const SEEK_STEP = 10;
 const LIVE_SEEK_STEP = 30;
+
+/** The control bar, marked by `PlayerControls`. */
+const CONTROLS_SELECTOR = '[data-player-controls]';
 
 export interface PlayerKeyHandlers {
   onTogglePlay: () => void;
@@ -60,6 +70,12 @@ export function usePlayerKeys(handlers: Partial<PlayerKeyHandlers> = {}): UsePla
       return;
     }
     hideTimer.current = setTimeout(() => {
+      // Never fade the bar out from under a focused control. On a remote there
+      // is no pointer to bring it back — the element would keep focus while
+      // becoming `opacity-0` and `pointer-events-none`, and the user would be
+      // pressing OK on an invisible button.
+      const active = document.activeElement as HTMLElement | null;
+      if (active?.closest(CONTROLS_SELECTOR)) return;
       playerStore.patch({ controlsVisible: false });
     }, AUTO_HIDE_MS);
   }, [clearTimer]);
@@ -92,6 +108,9 @@ export function usePlayerKeys(handlers: Partial<PlayerKeyHandlers> = {}): UsePla
       ) {
         return;
       }
+      // Focus is on a control in the bar: the D-pad resolves the arrows, and OK
+      // is the browser's own activation. See the module comment.
+      if (target?.closest(`${CONTROLS_SELECTOR} [data-nav]`)) return;
 
       const h = latest.current;
       const state = playerStore.getState();
@@ -169,11 +188,20 @@ export function usePlayerKeys(handlers: Partial<PlayerKeyHandlers> = {}): UsePla
       if (document.visibilityState === 'visible') showControls();
     };
 
+    // Focus arriving in the bar means the user is navigating it, which on a
+    // remote is the only signal there is that the controls should be showing.
+    const onFocusIn = (event: FocusEvent): void => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest(CONTROLS_SELECTOR)) showControls();
+    };
+
     window.addEventListener('keydown', onKeyDown);
     document.addEventListener('visibilitychange', onVisibilityChange);
+    document.addEventListener('focusin', onFocusIn);
     return () => {
       window.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('visibilitychange', onVisibilityChange);
+      document.removeEventListener('focusin', onFocusIn);
       clearTimer();
     };
   }, [showControls, scheduleHide, clearTimer]);

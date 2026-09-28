@@ -13,10 +13,17 @@
  * Candidates are the elements carrying `data-nav`, which every card, chip and
  * control sets. Only *mounted* elements are considered, so a virtualised grid
  * costs the same as a 20-item row.
+ *
+ * Containers nest (the shell contains a page, which contains a grid), and
+ * `keydown` bubbles from the innermost outwards. The innermost container that
+ * actually moves focus calls `preventDefault()`, and every outer container
+ * bails on that, so one D-pad press moves focus exactly once. An outer
+ * container only gets a turn when the inner one ran out of candidates, which is
+ * precisely when "step out to the parent context" is the right thing to do.
  */
 import { useCallback, useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
-import { focusableSelector } from './focusableSelector';
+import { navCandidates } from './navCandidates';
 
 export interface NavigationOptions {
   /** Fired on Escape / Back. */
@@ -30,11 +37,6 @@ export interface NavigationOptions {
 
 const ROW_TOLERANCE = 0.6;
 
-function isVisible(element: HTMLElement): boolean {
-  // offsetParent is null for `display:none` subtrees. Cheaper than getBoundingClientRect.
-  return element.offsetParent !== null || element === document.activeElement;
-}
-
 export function useDpadNavigation<T extends HTMLElement>(
   ref: RefObject<T | null>,
   options: NavigationOptions = {},
@@ -45,6 +47,9 @@ export function useDpadNavigation<T extends HTMLElement>(
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
+      // A nested container already resolved this press. See the module comment.
+      if (event.defaultPrevented) return;
+
       const container = ref.current;
       if (!container) return;
 
@@ -77,9 +82,7 @@ export function useDpadNavigation<T extends HTMLElement>(
         return;
       }
 
-      const candidates = Array.from(
-        container.querySelectorAll<HTMLElement>(focusableSelector),
-      ).filter((el) => el.hasAttribute('data-nav') && isVisible(el));
+      const candidates = navCandidates(container);
 
       if (candidates.length === 0) return;
 
@@ -90,6 +93,9 @@ export function useDpadNavigation<T extends HTMLElement>(
         event.preventDefault();
         const target = event.key === 'Home' ? candidates[0] : candidates[candidates.length - 1];
         target.focus();
+        // Home/End are the "jump to the far end" keys, so the target is usually
+        // off-screen: without this they would be focused but never scrolled to.
+        target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
         return;
       }
 

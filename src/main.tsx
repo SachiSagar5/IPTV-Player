@@ -18,7 +18,14 @@ import { createRouter } from './routes';
 import { hydrate } from '@/store/appStore';
 import { onDbBlocked, requestPersistentStorage } from '@/services/storage/db';
 import { isNativeHlsSupported } from '@/services/hls/hlsEngine';
+import { markPlatform } from '@/tv/platform';
 import './index.css';
+
+// Before anything renders, not inside `bootstrap`: the answer decides whether
+// the TV stylesheet applies, and a first paint without it would flash the
+// desktop metrics at a TV. Capacitor injects its global before any app script
+// runs, so this is already correct by the time it executes.
+markPlatform();
 
 /** Retire the static `#boot` splash once React has painted. */
 function removeBootSplash(): void {

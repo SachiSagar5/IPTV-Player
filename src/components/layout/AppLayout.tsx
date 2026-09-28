@@ -7,17 +7,21 @@
  * a single `Suspense` boundary so a late-arriving chunk never causes a layout
  * shift — the header and the padding are already in place when it lands.
  */
-import { Suspense, useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Suspense, useEffect, useRef } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { TopNav } from '@/components/navigation/TopNav';
 import { ErrorBanner } from './ErrorBanner';
 import { BootGate } from './BootGate';
 import { RouteFallback } from './RouteFallback';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useAppSelector } from '@/store/appStore';
+import { useDpadNavigation } from '@/hooks/useDpadNavigation';
+import { installNativeBack } from '@/tv/nativeBack';
+import { useRouteFocus } from '@/tv/useRouteFocus';
 
 export function AppLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   // The player owns the full viewport, so the shell hides its own chrome there.
   const isPlayer = location.pathname.startsWith('/watch');
   // The Settings switch for this exists, and `index.css` already carries the
@@ -38,9 +42,34 @@ export function AppLayout() {
     return () => root.classList.remove('reduce-motion');
   }, [reducedMotion]);
 
+  /**
+   * The outermost D-pad context, wrapping the nav and the page.
+   *
+   * Every other container is a page root, a row or a grid, and all of them sit
+   * inside `<main>`. That left the header outside every navigable container:
+   * a remote could Tab into the nav and then not move at all, because the
+   * handlers all ignore a keypress whose target is outside themselves. Worse,
+   * the header and the content are separate subtrees, so there was no path
+   * *between* them in either direction — pressing Down from the nav found no
+   * target below it, and pressing Up from the first row found no target above.
+   *
+   * This container is that path. It is a fallback rather than a replacement:
+   * `keydown` bubbles outwards, so a row or grid resolves the press first and
+   * marks it handled, and this only steps in when the inner context ran out.
+   */
+  const shellRef = useRef<HTMLDivElement>(null);
+  useDpadNavigation(shellRef, { loop: false });
+
+  // Each route needs somewhere for focus to land, or the D-pad has nothing to
+  // move from. Native only; the browser's own behaviour is left untouched.
+  useRouteFocus();
+
+  // Android hardware Back. No-op in a browser, where Back is the browser's.
+  useEffect(() => installNativeBack((delta) => navigate(delta)), [navigate]);
+
   return (
     <BootGate>
-      <div className="relative min-h-dvh">
+      <div ref={shellRef} className="relative min-h-dvh">
         <BackdropAurora />
 
         <a

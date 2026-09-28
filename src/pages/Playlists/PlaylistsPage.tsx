@@ -131,8 +131,14 @@ export default function PlaylistsPage() {
             const isThisBusy = busyId === playlist.id;
             return (
               <li key={playlist.id}>
+                {/*
+                  No `data-nav` on this wrapper. It is a `<div>`, so it matches
+                  none of the focusable selectors and marking it did nothing —
+                  the page had no reachable stop at all. The card's real actions
+                  below carry the attribute instead, which is what a remote
+                  should step through.
+                */}
                 <div
-                  data-nav
                   className={`surface-panel relative overflow-hidden rounded-2xl p-4 transition-[transform,border-color] duration-300 ${
                     isActive
                       ? 'border-accent-500/40'
@@ -223,6 +229,7 @@ export default function PlaylistsPage() {
                               size="sm"
                               variant="ghost"
                               icon="lock"
+                              data-nav
                               aria-pressed={isTagged}
                               onClick={() => void setPlaylistParentOnly(playlist.id, !isTagged)}
                             >
@@ -238,6 +245,7 @@ export default function PlaylistsPage() {
                         <Button
                           size="sm"
                           variant="secondary"
+                          data-nav
                           onClick={() => setDefaultPlaylist(playlist.id)}
                           disabled={isBusy}
                         >
@@ -248,6 +256,7 @@ export default function PlaylistsPage() {
                         icon="refresh"
                         label={`Refresh ${playlist.name}`}
                         size="sm"
+                        data-nav
                         onClick={() => void onRefresh(playlist)}
                         disabled={isBusy}
                         active={isThisBusy}
@@ -256,6 +265,7 @@ export default function PlaylistsPage() {
                         icon="edit"
                         label={`Rename ${playlist.name}`}
                         size="sm"
+                        data-nav
                         onClick={() => {
                           setRenameValue(playlist.name);
                           setRenameTarget(playlist);
@@ -265,6 +275,7 @@ export default function PlaylistsPage() {
                         icon="trash"
                         label={`Delete ${playlist.name}`}
                         size="sm"
+                        data-nav
                         onClick={() => setPending({ kind: 'delete', playlist })}
                       />
                     </div>

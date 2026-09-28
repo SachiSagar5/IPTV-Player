@@ -220,12 +220,17 @@ export default function SeriesDetailPage() {
             const label = cleanTitle(episode.name) || episode.name;
             return (
               <li key={episode.id}>
-                <div
-                  data-nav
-                  className="group/ep flex items-center gap-3 rounded-xl border border-white/6 bg-ink-900/50 p-2 transition-[background-color,border-color,transform] duration-200 hover:-translate-y-px hover:border-white/12 hover:bg-ink-850 focus-within:border-accent-500/50"
-                >
+                {/*
+                  `data-nav` belongs on the link, not on this wrapper. A bare
+                  `<div>` matches none of the focusable selectors, so marking it
+                  made the whole episode list invisible to the D-pad while
+                  looking like it was wired up. The row still lights up on focus
+                  through `focus-within` below.
+                */}
+                <div className="group/ep flex items-center gap-3 rounded-xl border border-white/6 bg-ink-900/50 p-2 transition-[background-color,border-color,transform] duration-200 hover:-translate-y-px hover:border-white/12 hover:bg-ink-850 focus-within:border-accent-500/50">
                   <Link
                     to={watchPath(episode)}
+                    data-nav
                     className="flex min-w-0 flex-1 items-center gap-3"
                     aria-label={`Play episode ${episode.episode ?? ''}: ${label}${
                       isResume ? `, ${formatTime(progress.duration - progress.position)} remaining` : ''
