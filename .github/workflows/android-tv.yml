@@ -178,16 +178,29 @@ jobs:
       - name: Publish to the rolling release
         env:
           GH_TOKEN: ${{ github.token }}
+          # Without this `gh` has no repository to work on. This job
+          # deliberately has no checkout — it only moves a file — so there is no
+          # git remote for gh to infer the repo from, and `GITHUB_REPOSITORY` is
+          # not something gh reads on its own.
+          GH_REPO: ${{ github.repository }}
           # The tag the app's download button points at. Changing it here means
           # changing it in src/tv/apkDownload.ts too.
           TAG: apk-latest
         run: |
+          set -euo pipefail
+          gh --version | head -1
+          echo "repo: $GH_REPO"
+          gh auth status || true
+
           # Release *assets* are served anonymously; Actions artifacts are not,
           # and they expire. The app's download button can only work against the
           # former, which is the entire reason this job exists.
           #
           # A prerelease so that `/releases/latest` keeps resolving to the newest
           # real `v*` tag once android-release.yml starts publishing those.
+          #
+          # Recreated rather than updated so the tag tracks the current commit
+          # instead of pointing at whichever push created it.
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release delete "$TAG" --cleanup-tag --yes
           fi
@@ -195,7 +208,7 @@ jobs:
             --prerelease \
             --target "$GITHUB_SHA" \
             --title "Latest Android TV build" \
-            --notes "Rebuilt automatically from \`main\`. Commit [\`${GITHUB_SHA::7}\`](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}). Not a tagged release — see the [\`v*\` releases](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases) for those."
+            --notes "Rebuilt automatically from \`main\`. Commit [\`${GITHUB_SHA:0:7}\`](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}). Not a tagged release — see the [\`v*\` releases](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases) for those."
 
           gh release upload "$TAG" dist-apk/IPTV-TV-debug.apk --clobber
 
