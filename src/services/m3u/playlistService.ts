@@ -90,6 +90,12 @@ export interface ParseInput {
   sourceLength: number;
   createdAt: number;
   lastUpdated: number | null;
+  /**
+   * Carried across a refresh so re-parsing cannot quietly drop a parent's own
+   * tag. Only ever the value already stored on the playlist, which is why
+   * untagging sticks: the stored flag is false before the next parse runs.
+   */
+  parentOnly?: boolean;
   signal?: AbortSignal;
   onProgress?: (progress: ParseProgress) => void;
 }
@@ -136,6 +142,10 @@ export async function runParse(input: ParseInput): Promise<ParseOutcome> {
     status: 'ready',
     createdAt: input.createdAt,
     parseVersion: PARSE_VERSION,
+    // A tag is a statement about the *playlist*, not about its contents, so it
+    // has to outlive a re-parse. Spread conditionally to keep the record free of
+    // a meaningless `parentOnly: false`.
+    ...(input.parentOnly ? { parentOnly: true } : {}),
   };
 
   return {
@@ -388,6 +398,7 @@ export async function loadPlaylistFromUrl(input: LoadPlaylistInput): Promise<Loa
     sourceLength: length,
     createdAt,
     lastUpdated: Date.now(),
+    parentOnly: input.meta?.parentOnly,
     signal: input.signal,
     onProgress: input.onProgress,
   });

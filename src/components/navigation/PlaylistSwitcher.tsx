@@ -17,6 +17,7 @@ import { formatCount } from '@/utils/format';
 export const PlaylistSwitcher = memo(function PlaylistSwitcher() {
   const playlists = useAppSelector((s) => s.playlists);
   const activeId = useAppSelector((s) => s.activePlaylistId);
+  const parentPlaylistIds = useAppSelector((s) => s.parentPlaylistIds);
   const busy = useAppSelector((s) => s.busy);
 
   const [open, setOpen] = useState(false);
@@ -45,9 +46,16 @@ export const PlaylistSwitcher = memo(function PlaylistSwitcher() {
     (id: string) => {
       setOpen(false);
       if (id === activeId) return;
+      // A gated playlist is not browsable, so `activatePlaylist` refuses it.
+      // Send the user to the Parent page instead of closing the menu on a click
+      // that appears to do nothing.
+      if (parentPlaylistIds.includes(id)) {
+        navigate(ROUTES.adult);
+        return;
+      }
       void activatePlaylist(id);
     },
-    [activeId],
+    [activeId, parentPlaylistIds, navigate],
   );
 
   if (playlists.length === 0) {
@@ -99,6 +107,9 @@ export const PlaylistSwitcher = memo(function PlaylistSwitcher() {
           <ul className="max-h-72 overflow-y-auto py-1">
             {playlists.map((playlist) => {
               const selected = playlist.id === activeId;
+              // Gated playlists are listed so they can be managed, but they are
+              // not browsable — selecting one routes to the Parent page.
+              const gated = parentPlaylistIds.includes(playlist.id);
               return (
                 <li key={playlist.id}>
                   <button
@@ -115,17 +126,26 @@ export const PlaylistSwitcher = memo(function PlaylistSwitcher() {
                       className={`h-2 w-2 shrink-0 rounded-full ${
                         selected
                           ? 'bg-accent-400 shadow-[0_0_8px_1px_rgb(var(--accent-400-rgb)/0.6)]'
-                          : 'bg-ink-600'
+                          : gated
+                            ? 'bg-live-500/70'
+                            : 'bg-ink-600'
                       }`}
                       aria-hidden="true"
                     />
                     <span className="min-w-0 flex-1">
-                      <span
-                        className={`block truncate text-sm ${
-                          selected ? 'font-medium text-mist-50' : 'text-mist-200'
-                        }`}
-                      >
-                        {playlist.name}
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          className={`truncate text-sm ${
+                            selected ? 'font-medium text-mist-50' : 'text-mist-200'
+                          }`}
+                        >
+                          {playlist.name}
+                        </span>
+                        {gated ? (
+                          <span className="shrink-0 rounded-full border border-live-500/40 px-1.5 text-[9px] font-bold tracking-[0.12em] text-live-400 uppercase">
+                            Parent
+                          </span>
+                        ) : null}
                       </span>
                       <span className="block truncate text-[11px] text-mist-500">
                         {playlist.status === 'ready'

@@ -116,6 +116,18 @@ export interface PlaylistMeta {
   counts: Record<ContentKind, number>;
   /** Entries whose `group-title` marks them as adult. */
   adultCount?: number;
+  /**
+   * The parent's own decision to keep this playlist behind the PIN.
+   *
+   * Independent of `adultCount`, and the only route for a provider that labels
+   * nothing: a list of `XXX` channels with no `group-title` scores zero adult
+   * entries and can never be auto-detected, so tagging it by hand is the only
+   * way to gate it. A playlist that *is* auto-detected does not need this.
+   *
+   * Optional and absent-by-default rather than `false`, so a record written
+   * before this field existed reads as untagged with no migration.
+   */
+  parentOnly?: boolean;
   /** Detected EPG/playlist header info (e.g. `#PLAYLIST:`). */
   headerName?: string;
   status: PlaylistStatus;

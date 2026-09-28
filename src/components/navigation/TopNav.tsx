@@ -60,7 +60,7 @@ export const TopNav = memo(function TopNav() {
   const navigate = useNavigate();
   const playlists = useAppSelector((s) => s.playlists);
   const parentControls = useAppSelector((s) => s.settings.parentControls);
-  const parentPlaylistId = useAppSelector((s) => s.parentPlaylistId);
+  const parentPlaylistIds = useAppSelector((s) => s.parentPlaylistIds);
 
   useEffect(() => {
     let frame = 0;
@@ -85,23 +85,25 @@ export const TopNav = memo(function TopNav() {
   const counts = useMemo(() => aggregateCounts(playlists), [playlists]);
   // Tally from every saved playlist, matching how the other tabs are counted: a
   // category should not disappear just because the playlist in view lacks it.
-  // Adult entries in the reserved Parent playlist do not count, because that
-  // playlist is not part of ordinary browsing.
+  // Adult entries in *every* reserved playlist do not count, because none of
+  // those playlists is part of ordinary browsing. Keyed off the whole reserved
+  // set rather than the one on show, so a second gated list cannot inflate the
+  // ordinary tally with entries nobody can reach.
+  const gated = useMemo(() => new Set(parentPlaylistIds), [parentPlaylistIds]);
   const adultCount = useMemo(
     () =>
       playlists.reduce(
-        (total, p) => (p.id === parentPlaylistId ? total : total + (p.adultCount ?? 0)),
+        (total, p) => (gated.has(p.id) ? total : total + (p.adultCount ?? 0)),
         0,
       ),
-    [playlists, parentPlaylistId],
+    [playlists, gated],
   );
-  const parentHasContent = useMemo(() => {
-    if (parentPlaylistId) {
-      const parent = playlists.find((p) => p.id === parentPlaylistId);
-      if (parent) return true;
-    }
-    return adultCount > 0;
-  }, [playlists, parentPlaylistId, adultCount]);
+  // Any reserved playlist is enough to make the tab worth showing, including when
+  // the one on show failed to load and left `parentPlaylistId` null.
+  const parentHasContent = useMemo(
+    () => parentPlaylistIds.length > 0 || adultCount > 0,
+    [parentPlaylistIds, adultCount],
+  );
 
   const visibleItems = NAV_ITEMS.filter((item) => {
     if (item.requiresParentControls) return parentControls && parentHasContent;

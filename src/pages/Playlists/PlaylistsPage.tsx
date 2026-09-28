@@ -24,9 +24,11 @@ import {
   refreshPlaylist,
   renamePlaylist,
   setDefaultPlaylist,
+  setPlaylistParentOnly,
   useAppSelector,
 } from '@/store/appStore';
 import { formatCount, formatRelativeTime } from '@/utils/format';
+import { adultRatio, isParentPlaylist } from '@/services/m3u/adult';
 import type { PlaylistMeta } from '@/types';
 
 type PendingAction = { kind: 'delete'; playlist: PlaylistMeta } | null;
@@ -34,7 +36,9 @@ type PendingAction = { kind: 'delete'; playlist: PlaylistMeta } | null;
 export default function PlaylistsPage() {
   const playlists = useAppSelector((s) => s.playlists);
   const activeId = useAppSelector((s) => s.activePlaylistId);
+  const parentPlaylistIds = useAppSelector((s) => s.parentPlaylistIds);
   const parentPlaylistId = useAppSelector((s) => s.parentPlaylistId);
+  const parentControls = useAppSelector((s) => s.settings.parentControls);
   const busy = useAppSelector((s) => s.busy);
   const rootRef = useRef<HTMLDivElement>(null);
   const [formOpen, setFormOpen] = usePersistentState('ui:playlists:form', false);
@@ -114,9 +118,16 @@ export default function PlaylistsPage() {
         <ul className="space-y-2.5 px-4 pb-4 md:px-8">
           {playlists.map((playlist) => {
             const isActive = playlist.id === activeId;
-            // Reserved for the Parent page, so it is listed for refresh/rename/
-            // delete but must not be offered as something to browse with.
-            const isParent = playlist.id === parentPlaylistId;
+            // Gated for the Parent page, so it is listed for refresh/rename/tag/
+            // delete but must not be offered as something to browse with. Any
+            // member of the reserved set counts, not just the one on show: a
+            // second gated list is just as unreachable from the ordinary pages.
+            const isParent = parentPlaylistIds.includes(playlist.id);
+            // Auto-detected: mostly adult entries. A manual tag cannot switch
+            // this off, so the control is disabled rather than hidden.
+            const isDetected = isParentPlaylist(playlist);
+            const isTagged = playlist.parentOnly === true;
+            const isShowingHere = playlist.id === parentPlaylistId;
             const isThisBusy = busyId === playlist.id;
             return (
               <li key={playlist.id}>
@@ -153,6 +164,11 @@ export default function PlaylistsPage() {
                             Parent only
                           </span>
                         ) : null}
+                        {isShowingHere ? (
+                          <span className="rounded-full bg-live-500/15 px-1.5 py-0.5 text-[9px] font-bold tracking-[0.12em] text-live-300 uppercase">
+                            Showing in Parent
+                          </span>
+                        ) : null}
                         {playlist.status === 'error' ? (
                           <span className="rounded-full border border-live-500/40 px-1.5 py-0.5 text-[9px] font-bold tracking-[0.12em] text-live-400 uppercase">
                             Error
@@ -182,6 +198,38 @@ export default function PlaylistsPage() {
 
                       {playlist.error ? (
                         <p className="mt-2 text-[11px] text-live-400">{playlist.error}</p>
+                      ) : null}
+
+                      {/* Shown only while the feature is on, because a tag is
+                          inert without it — a switched-off section is already
+                          not rendering these entries anywhere. */}
+                      {parentControls ? (
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/6 pt-3">
+                          <span className="flex min-w-0 items-center gap-1.5 text-[11px] text-mist-500">
+                            <Icon name="lock" size={12} className="shrink-0" />
+                            {isDetected ? (
+                              <span>
+                                Gated automatically —{' '}
+                                {Math.round(adultRatio(playlist) * 100)}% of entries are adult
+                              </span>
+                            ) : isTagged ? (
+                              <span>Tagged Parent only by you</span>
+                            ) : (
+                              <span>Keep this playlist behind the parental PIN</span>
+                            )}
+                          </span>
+                          {isDetected ? null : (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              icon="lock"
+                              aria-pressed={isTagged}
+                              onClick={() => void setPlaylistParentOnly(playlist.id, !isTagged)}
+                            >
+                              {isTagged ? 'Remove tag' : 'Tag Parent only'}
+                            </Button>
+                          )}
+                        </div>
                       ) : null}
                     </div>
 
@@ -236,6 +284,18 @@ export default function PlaylistsPage() {
           list.
         </span>
       </p>
+
+      {parentControls ? (
+        <p className="flex items-start gap-1.5 px-4 pt-2 text-[11px] leading-relaxed text-mist-600 md:px-8">
+          <Icon name="lock" size={12} className="mt-0.5 shrink-0" />
+          <span>
+            A Parent-only playlist is held out of Movies, Series, Live TV, Home and Search entirely,
+            and appears on the Parent page once the PIN is entered. You can tag as many as you like;
+            the Parent page shows one at a time and you pick which. A playlist that is mostly adult
+            is gated on its own, and cannot be untagged.
+          </span>
+        </p>
+      ) : null}
 
       <PageEnd />
 

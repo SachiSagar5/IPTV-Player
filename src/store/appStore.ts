@@ -30,9 +30,11 @@ import {
   DEFAULT_SETTINGS,
   loadActivePlaylistId,
   loadOnboardingDone,
+  loadParentPlaylistId,
   loadSettings,
   saveActivePlaylistId,
   saveOnboardingDone,
+  saveParentPlaylistId,
   saveSettings,
 } from '@/services/storage/prefs';
 import { playlistsRepo } from '@/services/storage/playlistRepo';
@@ -41,7 +43,7 @@ import type { FavoriteRecord, LiveHealthRecord, RecentRecord } from '@/services/
 import { isHiddenChannel } from '@/services/storage/userDataRepo';
 import type { PlayerErrorInfo } from './playerStore';
 import { describeError } from '@/services/m3u/fetcher';
-import { isAdultItem, pickParentPlaylistId } from '@/services/m3u/adult';
+import { isAdultItem, isParentPlaylist, pickParentPlaylistIds } from '@/services/m3u/adult';
 import { loadPlaylistFromUrl } from '@/services/m3u/playlistService';
 
 export interface AppState {
@@ -53,8 +55,15 @@ export interface AppState {
   activePlaylistId: string | null;
 
   /**
-   * The predominantly-adult playlist, reserved for the Parent page. It is never
-   * activated for ordinary browsing, so `items` never contains its entries.
+   * Every playlist reserved for the Parent page — the hand-tagged ones plus any
+   * that tripped the majority-adult rule. None of them can be activated for
+   * ordinary browsing, so their entries never reach `items`.
+   */
+  parentPlaylistIds: readonly string[];
+  /**
+   * Which of those the Parent page is currently showing, and whose entries are
+   * loaded into the `parent*` slots below. A member of `parentPlaylistIds`, or
+   * null when none is selected.
    */
   parentPlaylistId: string | null;
   /** Entries of `parentPlaylistId`, loaded separately from the active playlist. */
@@ -106,6 +115,7 @@ const initialState: AppState = {
   hydrationError: null,
   playlists: [],
   activePlaylistId: null,
+  parentPlaylistIds: [],
   parentPlaylistId: null,
   parentItems: [],
   parentItemById: new Map(),
@@ -292,15 +302,23 @@ export async function hydrate(): Promise<void> {
     const favoriteIds = new Set(favorites.map((f) => f.contentId));
     const progressById = new Map(progress.map((p) => [p.contentId, p]));
 
-    // Reserve the predominantly-adult playlist first, so the choice below can
-    // never land on it.
-    const parentPlaylistId = pickParentPlaylistId(playlists);
-    const isParent = (meta: PlaylistMeta): boolean => meta.id === parentPlaylistId;
+    // Reserve the gated playlists first, so neither choice below can land on
+    // one. The remembered Parent list is honoured when it is still gated, and
+    // otherwise the first available candidate takes its place.
+    const parentPlaylistIds = pickParentPlaylistIds(playlists);
+    const parentSet = new Set(parentPlaylistIds);
+    const rememberedParent = loadParentPlaylistId();
+    const parentPlaylistId =
+      (rememberedParent !== null && parentSet.has(rememberedParent) ? rememberedParent : null) ??
+      parentPlaylistIds[0] ??
+      null;
 
     const requested = loadActivePlaylistId();
     const active =
-      requested && playlists.some((p) => p.id === requested && !isParent(p)) ? requested : null;
-    const fallback = playlists.find((p) => p.status === 'ready' && !isParent(p))?.id ?? null;
+      requested && playlists.some((p) => p.id === requested && !parentSet.has(p.id))
+        ? requested
+        : null;
+    const fallback = playlists.find((p) => p.status === 'ready' && !parentSet.has(p.id))?.id ?? null;
     const activePlaylistId = active ?? fallback;
 
     appStore.patch({
@@ -311,12 +329,15 @@ export async function hydrate(): Promise<void> {
       progressById,
       recents,
       activePlaylistId,
+      parentPlaylistIds,
       parentPlaylistId,
       liveFailures: new Map(liveFailures.map((row) => [row.contentId, row])),
     });
 
     if (parentPlaylistId) {
       await loadParentPlaylist(parentPlaylistId);
+    } else {
+      saveParentPlaylistId(null);
     }
     if (activePlaylistId) {
       await activatePlaylist(activePlaylistId);
@@ -337,10 +358,10 @@ let activeLoadToken = 0;
 let parentLoadToken = 0;
 
 /**
- * Loads the reserved Parent playlist's entries and search index.
+ * Loads one Parent playlist's entries and search index into the `parent*` slots.
  *
  * Kept out of `items` on purpose: the ordinary pages read `items`, so reserving
- * the playlist here is what keeps its entries out of Movies, Series, Live, Home
+ * playlists here is what keeps their entries out of Movies, Series, Live, Home
  * and My List without any per-entry filtering on those pages.
  */
 export async function loadParentPlaylist(playlistId: string | null): Promise<void> {
@@ -353,6 +374,7 @@ export async function loadParentPlaylist(playlistId: string | null): Promise<voi
       parentSearchIndex: null,
       parentSeriesIndex: EMPTY_SERIES_INDEX,
     });
+    saveParentPlaylistId(null);
     return;
   }
   try {
@@ -365,6 +387,7 @@ export async function loadParentPlaylist(playlistId: string | null): Promise<voi
       parentSearchIndex: getOrCreateSearchIndex(playlistId, items),
       parentSeriesIndex: buildSeriesIndex(items),
     });
+    saveParentPlaylistId(playlistId);
   } catch (error) {
     if (token !== parentLoadToken) return;
     // A Parent list that will not load must not take the app down with it, and it
@@ -379,7 +402,27 @@ export async function loadParentPlaylist(playlistId: string | null): Promise<voi
       parentSearchIndex: null,
       parentSeriesIndex: EMPTY_SERIES_INDEX,
     });
+    saveParentPlaylistId(null);
   }
+}
+
+/**
+ * Points the Parent page at a different reserved playlist.
+ *
+ * One at a time on purpose. The entries live in IndexedDB and are read in full
+ * into `parentItems`, so merging several would mean holding every gated
+ * playlist in memory at once and rendering a grid with no single source for a
+ * title's playlist. The picker on the Parent page swaps one for the other.
+ */
+export async function selectParentPlaylist(playlistId: string): Promise<void> {
+  if (!appStore.getState().parentPlaylistIds.includes(playlistId)) return;
+  if (appStore.getState().parentPlaylistId === playlistId) return;
+  await loadParentPlaylist(playlistId);
+}
+
+/** True when this playlist is gated and so must stay out of ordinary browsing. */
+export function isParentOnlyPlaylist(playlistId: string): boolean {
+  return appStore.getState().parentPlaylistIds.includes(playlistId);
 }
 
 /**
@@ -402,10 +445,12 @@ function getOrCreateSearchIndex(
 }
 
 export async function activatePlaylist(playlistId: string | null): Promise<void> {
-  // The Parent playlist is not browsable, so refuse to activate it. Silently
-  // ignoring rather than throwing: the caller is usually a click handler that
-  // has nothing useful to do about it.
-  if (playlistId !== null && playlistId === appStore.getState().parentPlaylistId) return;
+  // A gated playlist is not browsable, so refuse to activate it. Checked against
+  // the whole reserved set rather than the one currently loaded, or tagging a
+  // second playlist would leave it browsable. Silently ignoring rather than
+  // throwing: the caller is usually a click handler that has nothing useful to do
+  // about it.
+  if (playlistId !== null && isParentOnlyPlaylist(playlistId)) return;
 
   const token = ++activeLoadToken;
   if (!playlistId) {
@@ -462,29 +507,76 @@ function resetActivePlaylist(): void {
 }
 
 /**
- * Re-derives which playlist is reserved for the Parent page, and loads it.
+ * Re-derives which playlists are reserved for the Parent page, and keeps the
+ * loaded one valid.
  *
- * A playlist can cross the majority threshold in either direction: a refresh
- * that re-parses a source can turn an ordinary list into an adult one, and
- * deleting the reserved list frees the next candidate. Callers run this after
- * any change to `playlists` rather than assuming the id is stable.
+ * Membership can change in either direction without the user touching anything:
+ * a refresh that re-parses a source can tip a list past the majority threshold,
+ * and deleting or untagging a list frees it. Callers run this after any change to
+ * `playlists` rather than assuming the ids are stable.
  */
 export async function reconcileParentPlaylist(): Promise<void> {
-  const { playlists, parentPlaylistId, activePlaylistId } = appStore.getState();
-  const nextId = pickParentPlaylistId(playlists);
-  if (nextId === parentPlaylistId) return;
+  const { playlists, parentPlaylistIds, parentPlaylistId, activePlaylistId } = appStore.getState();
+  const nextIds = pickParentPlaylistIds(playlists);
+  const nextSet = new Set(nextIds);
+  const membershipChanged =
+    nextIds.length !== parentPlaylistIds.length ||
+    nextIds.some((id, index) => id !== parentPlaylistIds[index]);
 
-  // If the playlist being browsed has just become the Parent list, move off it
-  // first: the active list still holds its entries at this point, and leaving the
-  // user on a playlist whose entries are about to be hidden would look like the
-  // app emptied itself out.
-  if (activePlaylistId !== null && activePlaylistId === nextId) {
+  const currentStillReserved = parentPlaylistId !== null && nextSet.has(parentPlaylistId);
+
+  if (!membershipChanged && currentStillReserved) return;
+  if (!membershipChanged && parentPlaylistId === null && nextIds.length === 0) return;
+
+  appStore.patch({ parentPlaylistIds: nextIds });
+
+  // If the playlist being browsed has just become gated, move off it first: the
+  // active list still holds its entries at this point, and leaving the user on a
+  // playlist whose entries are about to be hidden would look like the app emptied
+  // itself out.
+  if (activePlaylistId !== null && nextSet.has(activePlaylistId)) {
     const fallback =
-      playlists.find((p) => p.id !== nextId && p.status === 'ready')?.id ?? null;
+      playlists.find((p) => !nextSet.has(p.id) && p.status === 'ready')?.id ?? null;
     await activatePlaylist(fallback);
   }
 
-  await loadParentPlaylist(nextId);
+  // Keep showing the same list when it survived the change, so a refresh that
+  // only added a second candidate does not move the user off the one they were
+  // looking at.
+  await loadParentPlaylist(currentStillReserved ? parentPlaylistId : (nextIds[0] ?? null));
+}
+
+/**
+ * Tags or untags a playlist as Parent-only.
+ *
+ * Tagging a playlist that is currently being browsed moves the user off it, the
+ * same way auto-detection does: its entries are about to stop being reachable
+ * from the ordinary pages.
+ */
+export async function setPlaylistParentOnly(playlistId: string, parentOnly: boolean): Promise<void> {
+  const meta = appStore.getState().playlists.find((p) => p.id === playlistId);
+  if (!meta) return;
+  // Nothing to do if the tag would not change the outcome, which also keeps a
+  // no-op write from touching the record.
+  if (Boolean(meta.parentOnly) === parentOnly) return;
+  // The rule still gates this list on its own, so a manual tag cannot undo it.
+  if (!parentOnly && isParentPlaylist(meta)) return;
+
+  const next: PlaylistMeta = { ...meta };
+  if (parentOnly) next.parentOnly = true;
+  else delete next.parentOnly;
+
+  appStore.patch((state) => ({
+    playlists: state.playlists.map((p) => (p.id === playlistId ? next : p)),
+  }));
+
+  try {
+    await playlistsRepo.save(next);
+  } catch (error) {
+    pushError(`Could not save the playlist tag. ${describeError(error)}`);
+  }
+
+  await reconcileParentPlaylist();
 }
 
 export async function addPlaylist(input: {
@@ -589,12 +681,20 @@ export async function deletePlaylist(playlistId: string): Promise<void> {
   }
 
   if (appStore.getState().activePlaylistId === playlistId) {
-    await activatePlaylist(remaining[0]?.id ?? null);
+    // Skip the gated ones, or the fallback could land on a playlist that
+    // `activatePlaylist` will refuse and leave the user with nothing active.
+    const next =
+      remaining.find((p) => !isParentOnlyPlaylist(p.id) && p.status === 'ready')?.id ?? null;
+    await activatePlaylist(next);
   }
   await reconcileParentPlaylist();
 }
 
 export function setDefaultPlaylist(playlistId: string): void {
+  // Refuse before persisting. Writing first and activating second would leave a
+  // gated playlist's id in LocalStorage, which `hydrate` then rejects on the next
+  // launch and quietly discards.
+  if (isParentOnlyPlaylist(playlistId)) return;
   saveActivePlaylistId(playlistId);
   if (appStore.getState().activePlaylistId !== playlistId) void activatePlaylist(playlistId);
 }

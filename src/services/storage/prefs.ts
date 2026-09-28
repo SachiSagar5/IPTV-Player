@@ -11,6 +11,7 @@ const PREFIX = 'iptv:';
 const KEYS = {
   settings: `${PREFIX}settings`,
   activePlaylist: `${PREFIX}activePlaylist`,
+  parentPlaylist: `${PREFIX}parentPlaylist`,
   recentSearches: `${PREFIX}recentSearches`,
   onboardingDone: `${PREFIX}onboardingDone`,
   /** Hash of the parental PIN. Kept out of the settings blob on purpose. */
@@ -73,6 +74,25 @@ export function saveActivePlaylistId(id: string | null): void {
   if (typeof localStorage === 'undefined') return;
   if (id === null) localStorage.removeItem(KEYS.activePlaylist);
   else localStorage.setItem(KEYS.activePlaylist, id);
+}
+
+/**
+ * Which of the Parent-only playlists the section is currently showing.
+ *
+ * Remembered so the Parent page opens on the same list every time, in the same
+ * way `activePlaylist` remembers the ordinary one. Advisory only: the id can
+ * point at a playlist that has since been deleted or untagged, and every caller
+ * treats that as "fall back to the first available".
+ */
+export function loadParentPlaylistId(): string | null {
+  if (typeof localStorage === 'undefined') return null;
+  return localStorage.getItem(KEYS.parentPlaylist);
+}
+
+export function saveParentPlaylistId(id: string | null): void {
+  if (typeof localStorage === 'undefined') return;
+  if (id === null) localStorage.removeItem(KEYS.parentPlaylist);
+  else localStorage.setItem(KEYS.parentPlaylist, id);
 }
 
 const MAX_RECENT_SEARCHES = 8;

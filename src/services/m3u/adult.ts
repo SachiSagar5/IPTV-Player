@@ -12,6 +12,12 @@
  * shared group such as "Movies" will not be detected here. This finds the
  * common case (dedicated `XXX` / `Adult` groups), not every possible layout.
  * Add markers below as new provider naming shows up.
+ *
+ * A provider that labels nothing at all cannot be caught by any regex, so the
+ * playlist-level half of this file is not the only route in: a parent can tag a
+ * playlist `parentOnly` by hand and it is gated regardless. Detection and the
+ * manual tag are unioned in `pickParentPlaylistIds` rather than one overriding
+ * the other, because each covers the other's blind spot.
  */
 import type { ContentItem } from '@/types';
 
@@ -82,26 +88,49 @@ export function adultRatio(candidate: ParentPlaylistCandidate): number {
   return (candidate.adultCount ?? 0) / candidate.itemCount;
 }
 
+/** The shape `pickParentPlaylistIds` needs, so callers can pass `PlaylistMeta` directly. */
+export interface ParentPlaylistCandidateWithId extends ParentPlaylistCandidate {
+  id: string;
+  /**
+   * The parent's own "keep this one gated" tag. Optional and distinct from
+   * detection: it is the only route in for a provider that labels nothing.
+   */
+  parentOnly?: boolean;
+}
+
 /**
- * Picks the Parent playlist from all saved playlists, or `null` when there is
- * none.
+ * Every playlist that belongs on the Parent page: the ones tagged by hand, plus
+ * the ones that tripped the majority-adult rule.
  *
- * At most one playlist is reserved: the most adult one, ties broken by count. A
- * second majority-adult playlist stays selectable and is protected only by the
- * per-entry gate, which is the lesser evil versus silently hiding a playlist the
- * user cannot reach anywhere.
+ * Both routes are unioned rather than one overriding the other, because they
+ * fail in opposite directions. Detection catches the labelled playlist nobody
+ * tagged; the manual tag catches the unlabelled one detection can never see
+ * (`adultCount` is 0 for a source with no `group-title` at all).
+ *
+ * Order is manual tags first, then detected lists by descending adult share, so
+ * a deliberate choice wins the default slot on a fresh install.
  */
-export function pickParentPlaylistId<T extends ParentPlaylistCandidate & { id: string }>(
+export function pickParentPlaylistIds<T extends ParentPlaylistCandidateWithId>(
   metas: readonly T[],
-): string | null {
-  let best: { id: string; ratio: number; adults: number } | null = null;
+): string[] {
+  const tagged: string[] = [];
+  const detected: { id: string; ratio: number; adults: number }[] = [];
+
   for (const meta of metas) {
-    if (!isParentPlaylist(meta)) continue;
-    const ratio = adultRatio(meta);
-    const adults = meta.adultCount ?? 0;
-    if (best === null || ratio > best.ratio || (ratio === best.ratio && adults > best.adults)) {
-      best = { id: meta.id, ratio, adults };
+    if (meta.parentOnly) {
+      tagged.push(meta.id);
+      continue;
     }
+    if (!isParentPlaylist(meta)) continue;
+    detected.push({
+      id: meta.id,
+      ratio: adultRatio(meta),
+      adults: meta.adultCount ?? 0,
+    });
   }
-  return best?.id ?? null;
+
+  // Ties on share go to the larger playlist: of two equally adult lists, the
+  // bigger one is the one the parent meant.
+  detected.sort((a, b) => b.ratio - a.ratio || b.adults - a.adults);
+  return [...tagged, ...detected.map((entry) => entry.id)];
 }

@@ -255,7 +255,7 @@ export default function SettingsPage() {
 
       <Section
         title="Parental controls"
-        description="Hold adult content back behind a PIN, and reserve a dedicated playlist for the Parent page."
+        description="Hold adult content back behind a PIN, and keep chosen playlists for the Parent page only."
       >
         <div className="divide-y divide-ink-700">
           <Row>
@@ -295,10 +295,12 @@ export default function SettingsPage() {
           is stored hashed and only re-locks when the app is closed.
         </p>
         <p className="mt-2 text-xs text-mist-500">
-          If one of your playlists is mostly adult, it is reserved automatically: it moves out of
-          normal browsing and is shown only on the Parent page, and every other page keeps using
-          whichever playlist you have selected. It is marked &ldquo;Parent only&rdquo; in
-          Playlists.
+          You can tag as many playlists as you like Parent only from the Playlists page. Each one
+          is then held out of Movies, Series, Live TV, Home and Search entirely and appears on the
+          Parent page, which shows one of them at a time — you pick which. A playlist where most
+          entries are adult is gated automatically as well, and cannot be untagged. Tagging exists
+          because plenty of providers label nothing at all: a list of channels with no group names
+          scores zero adult entries, so no amount of waiting will make it self-gate.
         </p>
       </Section>
 
