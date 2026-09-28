@@ -111,3 +111,66 @@ jobs:
           path: IPTV-TV-debug.apk
           if-no-files-found: error
           retention-days: 14
+
+  # Publishes the APK somewhere a browser can download without a login.
+  #
+  # Kept in a second job rather than a final step in `apk` for two reasons. The
+  # `apk` job runs `npm ci` and a Gradle build of the checked-out code, so it
+  # holds a token that could write; keeping `contents: write` out of that job
+  # means a compromised dependency cannot publish anything. And the write token
+  # only ever exists in a job gated on a push to main, so a fork's pull request
+  # cannot reach it — `pull_request` from a fork gets a read-only token anyway,
+  # but the `if` means the step is not even attempted.
+  publish:
+    name: Publish rolling APK release
+    needs: apk
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: IPTV-TV-debug
+          path: dist-apk
+
+      - name: Publish to the rolling release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # The tag the app's download button points at. Changing it here means
+          # changing it in src/tv/apkDownload.ts too.
+          TAG: apk-latest
+        run: |
+          # Release *assets* are served anonymously; Actions artifacts are not,
+          # and they expire. The app's download button can only work against the
+          # former, which is the entire reason this job exists.
+          #
+          # A prerelease so that `/releases/latest` keeps resolving to the newest
+          # real `v*` tag once android-release.yml starts publishing those.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release delete "$TAG" --cleanup-tag --yes
+          fi
+          gh release create "$TAG" \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Latest Android TV build" \
+            --notes "Rebuilt automatically from \`main\`. Commit [\`${GITHUB_SHA::7}\`](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}). Not a tagged release — see the [\`v*\` releases](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases) for those."
+
+          gh release upload "$TAG" dist-apk/IPTV-TV-debug.apk --clobber
+
+      - name: Confirm the download URL resolves
+        # The app links to releases/download/apk-latest/IPTV-TV-debug.apk. A
+        # release that was created but whose asset upload failed would leave a
+        # button in the UI pointing at a 404, so the link is followed for real
+        # rather than assumed.
+        run: |
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/apk-latest/IPTV-TV-debug.apk"
+          CODE=$(curl -sSL -o /dev/null -w '%{http_code}' "$URL")
+          echo "GET $URL -> $CODE"
+          if [ "$CODE" != "200" ]; then
+            echo "::error::The published download URL did not resolve (HTTP $CODE)"
+            exit 1
+          fi

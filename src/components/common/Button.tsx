@@ -6,7 +6,7 @@
  * OK button without any extra wiring.
  */
 import { forwardRef, memo } from 'react';
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { LinkProps } from 'react-router-dom';
 import { Icon } from './Icon';
@@ -182,6 +182,47 @@ export const ButtonLink = memo(function ButtonLink({
       {children ? <span className="truncate">{children}</span> : null}
       {iconRight ? <Icon name={iconRight} size={iconSize} /> : null}
     </Link>
+  );
+});
+
+export interface ButtonAnchorProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
+  variant?: Variant;
+  size?: Size;
+  icon?: IconName;
+  iconRight?: IconName;
+  fullWidth?: boolean;
+  children?: ReactNode;
+}
+
+/**
+ * Same visual language as `Button`, but a real `<a>`.
+ *
+ * `ButtonLink` is react-router's `Link` and only handles in-app routes; it
+ * cannot take an absolute URL, and it would try to push a GitHub download onto
+ * the router's history. Anything leaving the app needs this instead.
+ */
+export const ButtonAnchor = memo(function ButtonAnchor({
+  variant = 'primary',
+  size = 'md',
+  icon,
+  iconRight,
+  fullWidth = false,
+  className = '',
+  children,
+  ...rest
+}: ButtonAnchorProps) {
+  const iconSize = size === 'sm' ? 14 : size === 'xl' ? 22 : 18;
+  return (
+    <a
+      className={`${BASE} ${VARIANTS[variant]} ${SIZES[size]} ${
+        fullWidth ? 'w-full' : ''
+      } ${className}`}
+      {...rest}
+    >
+      {icon ? <Icon name={icon} size={iconSize} /> : null}
+      {children ? <span className="truncate">{children}</span> : null}
+      {iconRight ? <Icon name={iconRight} size={iconSize} /> : null}
+    </a>
   );
 });
 

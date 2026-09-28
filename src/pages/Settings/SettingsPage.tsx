@@ -14,11 +14,13 @@ import { useCallback, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { PageHeader, PageEnd } from '@/components/layout/PageHeader';
 import { Switch, SegmentedControl } from '@/components/common/Form';
-import { Button } from '@/components/common/Button';
+import { Button, ButtonAnchor } from '@/components/common/Button';
 import { Modal } from '@/components/common/Modal';
 import { InlineBanner } from '@/components/common/States';
 import { Icon } from '@/components/common/Icon';
 import { useDpadNavigation } from '@/hooks/useDpadNavigation';
+import { isNativeShell } from '@/tv/platform';
+import { apkUrl, releasesUrl } from '@/tv/apkDownload';
 import { activatePlaylist, updateSettings, useAppSelector } from '@/store/appStore';
 import { wipeUserData } from '@/services/storage/userDataRepo';
 import { playlistsRepo } from '@/services/storage/playlistRepo';
@@ -399,6 +401,8 @@ export default function SettingsPage() {
         </div>
       </Section>
 
+      <InstallSection />
+
       <Section title="About">
         <ul className="space-y-2 text-xs leading-relaxed text-mist-500">
           <li className="flex items-start gap-2">
@@ -624,5 +628,78 @@ function Stat({ label, value }: { label: string; value: number }) {
         {value.toLocaleString()}
       </dd>
     </div>
+  );
+}
+
+/**
+ * Offer the Android TV build, with the sideloading steps.
+ *
+ * Hidden inside the native shell, where it would be a button to download the
+ * app that is already running.
+ *
+ * The steps are not filler. "Install unknown apps" is off by default on every
+ * Android TV box, and there is no Play Store on most of them, so a download
+ * button on its own leaves someone staring at a file they cannot open. The last
+ * step is the one that surprises people: the app installs and runs fine, but a
+ * launcher set to the "apps only" row will not show it until it is moved to the
+ * TV row, and it looks like the install failed.
+ */
+function InstallSection() {
+  if (isNativeShell()) return null;
+
+  return (
+    <Section
+      title="Install on a TV"
+      description="Runs on Android TV, Google TV and Fire TV from a remote control."
+    >
+      <div className="p-4">
+        <ol className="ml-4 list-decimal space-y-1.5 text-xs leading-relaxed text-mist-500">
+          <li>Download the APK on any phone or computer.</li>
+          <li>
+            Get it onto the TV — a USB stick, a network share, or{' '}
+            <code className="rounded bg-ink-850 px-1 py-0.5 text-mist-200">
+              adb install
+            </code>{' '}
+            over USB debugging.
+          </li>
+          <li>
+            On the TV, turn on <span className="text-mist-200">Install unknown apps</span> for
+            whichever app you opened the file from, under Settings → Apps → Special app access.
+          </li>
+          <li>
+            Open the file and confirm. If a launcher set to &ldquo;apps only&rdquo; does not
+            show it afterwards, move it to the TV row — the install did work.
+          </li>
+        </ol>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <ButtonAnchor
+            href={apkUrl()}
+            icon="tv"
+            data-nav
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Download for Android TV
+          </ButtonAnchor>
+          <ButtonAnchor
+            href={releasesUrl()}
+            variant="ghost"
+            icon="link"
+            data-nav
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            All builds
+          </ButtonAnchor>
+        </div>
+
+        <p className="mt-3 text-xs leading-relaxed text-mist-600">
+          Rebuilt from the current commit on every push and installed the same way as the web app,
+          with your playlists and watch progress kept separately on each device. This is the CI
+          build, so Android will warn that it is from an unrecognised developer the first time.
+        </p>
+      </div>
+    </Section>
   );
 }
