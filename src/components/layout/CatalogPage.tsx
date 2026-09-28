@@ -119,7 +119,10 @@ export const CatalogPage = memo(function CatalogPage({
 
       {result.length === 0 ? (
         <EmptyState
-          icon={variant === 'channel' ? 'tv' : 'film'}
+          // Keyed to `kind`, not `variant`: Live TV renders poster cards now, but
+          // its empty state is still about television, and reading the icon off
+          // the card variant gave it a film glyph.
+          icon={kind === 'live' ? 'tv' : 'film'}
           title={emptyTitle}
           message={hasActive ? 'No entries match the current filters.' : emptyMessage}
           action={

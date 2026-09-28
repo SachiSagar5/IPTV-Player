@@ -35,7 +35,12 @@ export default function LiveTvPage() {
     <CatalogPage
       kind="live"
       title="Live TV"
-      variant="channel"
+      // Poster cards, same size as Movies. The old `channel` variant was a
+      // 142px square, which left the Live TV grid visibly denser and its cards
+      // much smaller than every other browse page. Logos now cover-fill a 2:3
+      // frame instead of sitting letterboxed in a square; the LIVE badge is
+      // driven by `kind`, not by the variant, so it is unaffected.
+      variant="poster"
       showSort={false}
       showFavorites={false}
       excludeIds={hiddenIds}
