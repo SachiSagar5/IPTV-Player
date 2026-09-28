@@ -20,7 +20,7 @@ import type {
   HlsConfig,
   LoaderContext,
 } from 'hls.js';
-import { isNativeHlsSupported, isProgressiveUrl } from './nativeSupport';
+import { classifyStream, isNativeHlsSupported } from './nativeSupport';
 import type { StreamSource } from '@/types';
 import type {
   AudioTrackInfo,
@@ -139,6 +139,7 @@ export class HlsEngine {
   private events: HlsEngineEvents;
   private recoveryAttempts = 0;
   private usingNative = false;
+  private usingProgressive = false;
   private destroyed = false;
   /** Detaches the native track listeners installed for Safari's late track list. */
   private nativeTrackCleanup: (() => void) | null = null;
@@ -155,8 +156,9 @@ export class HlsEngine {
     this.events = events;
   }
 
-  get engineName(): 'hls.js' | 'native' | 'none' {
+  get engineName(): 'hls.js' | 'native' | 'progressive' | 'none' {
     if (this.hls) return 'hls.js';
+    if (this.usingProgressive) return 'progressive';
     if (this.usingNative) return 'native';
     return 'none';
   }
@@ -175,6 +177,7 @@ export class HlsEngine {
     }
     this.HlsCtor = null;
     this.usingNative = false;
+    this.usingProgressive = false;
     this.recoveryAttempts = 0;
     this.pendingSeek = 0;
   }
@@ -197,23 +200,53 @@ export class HlsEngine {
       return;
     }
 
+    // The engine follows the *URL*, not just the platform. Deciding by platform
+    // alone sent every progressive file through hls.js, which parses its input as
+    // an M3U8 manifest and so rejects a perfectly playable MP4 with
+    // "manifest is not valid M3U8" — the single biggest source of "works in VLC,
+    // fails here" reports from real-world playlists.
+    const shape = classifyStream(source.url);
+
+    if (shape.kind === 'unsupported') {
+      this.events.onFatalError({
+        message: `This is a ${shape.label} file, which no browser can decode. VLC, Kodi or a desktop player will open it; a web player cannot.`,
+        detail: `Container .${shape.ext} is outside the set browsers can demux.`,
+        recoverable: false,
+        attempts: 0,
+      });
+      return;
+    }
+
+    // Progressive formats go straight to the media element on *every* browser,
+    // not just Safari. `<video>` is the only thing that can play them, and this
+    // path also reports the native track list and the resume position.
+    if (shape.kind === 'progressive') {
+      this.loadDirect(source, options.startPosition, 'progressive');
+      return;
+    }
+
     // Safari/iOS have no Media Source Extensions, so the platform decoder is the
     // only option there. Everywhere else hls.js is preferred because it is the
     // only path that exposes quality levels and alternate audio renditions.
     // Deciding this *before* the dynamic import keeps Safari from paying for a
     // chunk it will never use.
     if (isNativeHlsSupported()) {
-      this.loadNative(source, options.startPosition);
+      this.loadDirect(source, options.startPosition, 'native');
       return;
     }
 
     void this.loadWithHlsJs(source, options, token);
   }
 
-  private loadNative(source: StreamSource, startPosition: number): void {
+  private loadDirect(
+    source: StreamSource,
+    startPosition: number,
+    mode: 'native' | 'progressive',
+  ): void {
     const video = this.video;
     if (!video) return;
     this.usingNative = true;
+    this.usingProgressive = mode === 'progressive';
     video.src = source.url;
     if (startPosition > 0) {
       const onLoaded = (): void => {
@@ -271,12 +304,8 @@ export class HlsEngine {
     if (this.destroyed || token !== this.loadToken) return;
 
     if (!HlsCtor.isSupported()) {
-      // No Media Source Extensions and no native HLS: a progressive file may
-      // still play directly.
-      if (isProgressiveUrl(source.url) && this.video) {
-        this.video.src = source.url;
-        return;
-      }
+      // No Media Source Extensions and no native HLS. Progressive files never
+      // reach this point — `load` hands them to the media element first.
       this.events.onFatalError({
         message: 'This browser cannot play HLS streams. Try Chrome, Edge, or Firefox.',
         recoverable: false,
@@ -450,8 +479,14 @@ export class HlsEngine {
     const video = this.video;
     if (!video) return;
     this.recoveryAttempts = 0;
-    this.hls?.stopLoad();
-    this.hls?.startLoad(-1);
+    if (this.hls) {
+      this.hls.stopLoad();
+      this.hls.startLoad(-1);
+    } else if (this.usingProgressive) {
+      // Re-assigning `src` is what actually retries a direct file; calling
+      // `play()` alone would just rethrow the same network error.
+      video.load();
+    }
     void video.play().catch(() => {
       /* autoplay may be blocked; the user can press play */
     });

@@ -59,7 +59,9 @@ export const VideoPlayer = memo(function VideoPlayer({
   const engineRef = useRef<HlsEngine | null>(null);
   const navigate = useNavigate();
   const settings = useAppSelector((s) => s.settings);
-  const [engineName, setEngineName] = useState<'hls.js' | 'native' | 'none'>('none');
+  const [engineName, setEngineName] = useState<'hls.js' | 'native' | 'progressive' | 'none'>(
+    'none',
+  );
 
   const fullscreen = useFullscreen(videoRef);
   const pip = usePictureInPicture(mediaRef);
@@ -261,7 +263,7 @@ export const VideoPlayer = memo(function VideoPlayer({
       const code = media.error?.code;
       const message =
         code === 4 /* MEDIA_ERR_SRC_NOT_SUPPORTED */
-          ? 'This stream uses a codec or container this browser cannot play. The provider may only offer HLS or a format this device does not decode.'
+          ? 'The file loaded, but this browser cannot decode it. Direct MP4s from IPTV providers are often HEVC (H.265) or E-AC3 audio, which Chrome and Safari do not support — VLC does.'
           : code === 2 /* MEDIA_ERR_NETWORK */
             ? 'The connection dropped while playing. Check your network and try again.'
             : 'Playback failed. The stream may be offline or temporarily unavailable.';
