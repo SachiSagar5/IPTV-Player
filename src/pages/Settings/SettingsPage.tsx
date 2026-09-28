@@ -88,6 +88,7 @@ export default function SettingsPage() {
         <div className="divide-y divide-ink-700">
           <Row>
             <Switch
+              data-nav
               label="Autoplay the next episode"
               description="Advance to the following episode when one finishes."
               checked={settings.defaultAutoPlay}
@@ -100,6 +101,7 @@ export default function SettingsPage() {
               description="Auto follows the stream and adapts to available bandwidth."
               control={
                 <SegmentedControl
+                  dpadStops
                   ariaLabel="Default quality"
                   size="sm"
                   value={settings.defaultQuality}
@@ -128,6 +130,7 @@ export default function SettingsPage() {
                   onChange={(event) =>
                     updateSettings({ defaultVolume: Number(event.target.value) })
                   }
+                  data-nav
                   aria-label="Default volume"
                   className="h-1 w-32 cursor-pointer appearance-none rounded-full bg-ink-700
                     [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:rounded-full
@@ -145,6 +148,7 @@ export default function SettingsPage() {
               description={`${settings.defaultPlaybackRate}x`}
               control={
                 <SegmentedControl
+                  dpadStops
                   ariaLabel="Default playback speed"
                   size="sm"
                   value={settings.defaultPlaybackRate}
@@ -166,6 +170,7 @@ export default function SettingsPage() {
         <div className="divide-y divide-ink-700">
           <Row>
             <Switch
+              data-nav
               label="Language filter"
               description="Show a language chip row derived from each entry's `tvg-language`."
               checked={settings.showLanguageFilter}
@@ -174,6 +179,7 @@ export default function SettingsPage() {
           </Row>
           <Row>
             <Switch
+              data-nav
               label="Country filter"
               description="Derived from the `tvg-country` attribute, shown as ISO codes."
               checked={settings.showCountryFilter}
@@ -182,6 +188,7 @@ export default function SettingsPage() {
           </Row>
           <Row>
             <Switch
+              data-nav
               label="Show uncategorised entries"
               description="Entries that could not be confidently classified as live, movie or series."
               checked={settings.showOtherCategory}
@@ -194,6 +201,7 @@ export default function SettingsPage() {
               description="Compact fits more titles per screen."
               control={
                 <SegmentedControl
+                  dpadStops
                   ariaLabel="Card density"
                   size="sm"
                   value={settings.cardDensity}
@@ -208,6 +216,7 @@ export default function SettingsPage() {
           </Row>
           <Row>
             <Switch
+              data-nav
               label="Reduce motion"
               description="Disables animated spinners, scale effects and the pulsing live badge."
               checked={settings.reducedMotion}
@@ -224,6 +233,7 @@ export default function SettingsPage() {
         <div className="divide-y divide-ink-700">
           <Row>
             <Switch
+              data-nav
               label="Fill in missing posters"
               description="When a movie or series has no logo in the playlist, look up a poster by title. Titles are sent to a public metadata service; playlists, streams and viewing history never are. Turn this off to stay fully offline."
               checked={settings.autoFetchPosters}
@@ -238,6 +248,7 @@ export default function SettingsPage() {
                 <Button
                   variant="ghost"
                   size="sm"
+                  data-nav
                   onClick={() => {
                     // Lazy so the poster system stays out of the first-paint bundle.
                     void import('@/store/posterStore')
@@ -260,6 +271,7 @@ export default function SettingsPage() {
         <div className="divide-y divide-ink-700">
           <Row>
             <Switch
+              data-nav
               label="Hide adult content behind a PIN"
               description="Entries filed under a group this player reads as adult (XXX, Adult, 18+) leave Movies, Series, Live TV, Home and Search, and appear only on the Parent page once the PIN is entered. Entries are recognised from the playlist's own group name, so a title alone will not be hidden."
               checked={settings.parentControls}
@@ -281,7 +293,7 @@ export default function SettingsPage() {
                     : 'Using the default PIN, 8345. Change it to something a child is unlikely to guess.'
                 }
                 control={
-                  <Button variant="ghost" size="sm" onClick={() => setPinEditorOpen(true)}>
+                  <Button variant="ghost" size="sm" data-nav onClick={() => setPinEditorOpen(true)}>
                     {customPin ? 'Change PIN' : 'Set a PIN'}
                   </Button>
                 }
@@ -330,6 +342,7 @@ export default function SettingsPage() {
               <div className="flex shrink-0 items-center gap-2">
                 <input
                   id="omdb-key"
+                data-nav
                   type="password"
                   value={settings.omdbApiKey}
                   onChange={(event) => updateSettings({ omdbApiKey: event.target.value })}
@@ -343,6 +356,7 @@ export default function SettingsPage() {
                   <Button
                     variant="ghost"
                     size="sm"
+                    data-nav
                     onClick={() => updateSettings({ omdbApiKey: '' })}
                     aria-label="Clear OMDb API key"
                   >
@@ -367,6 +381,7 @@ export default function SettingsPage() {
           <Button
             variant="danger"
             icon="trash"
+            data-nav
             onClick={() => setConfirm('progress')}
             disabled={progressCount === 0 && favorites.length === 0}
           >
@@ -375,6 +390,7 @@ export default function SettingsPage() {
           <Button
             variant="secondary"
             icon="download"
+            data-nav
             onClick={() => setConfirm('cache')}
             disabled={itemCount === 0}
           >
@@ -418,11 +434,12 @@ export default function SettingsPage() {
         size="sm"
         footer={
           <>
-            <Button variant="ghost" onClick={() => setPinEditorOpen(false)}>
+            <Button variant="ghost" data-nav onClick={() => setPinEditorOpen(false)}>
               Cancel
             </Button>
             <Button
               variant="primary"
+              data-nav
               onClick={() => {
                 const invalid = validatePin(newPin);
                 if (invalid) {
@@ -452,6 +469,7 @@ export default function SettingsPage() {
             <span className="mb-1 block text-xs font-medium text-mist-300">New PIN</span>
             <input
               type="password"
+              data-nav
               inputMode="numeric"
               autoComplete="new-password"
               value={newPin}
@@ -467,6 +485,7 @@ export default function SettingsPage() {
             <span className="mb-1 block text-xs font-medium text-mist-300">Confirm PIN</span>
             <input
               type="password"
+              data-nav
               inputMode="numeric"
               autoComplete="new-password"
               value={newPinConfirm}
@@ -485,6 +504,7 @@ export default function SettingsPage() {
           {customPin ? (
             <button
               type="button"
+              data-nav
               className="text-xs text-mist-500 underline underline-offset-2 hover:text-mist-300"
               onClick={() => {
                 saveAdultPinHash('');
@@ -507,12 +527,13 @@ export default function SettingsPage() {
         size="sm"
         footer={
           <>
-            <Button variant="ghost" onClick={() => setConfirm(null)}>
+            <Button variant="ghost" data-nav onClick={() => setConfirm(null)}>
               Cancel
             </Button>
             <Button
               variant="danger"
               icon="trash"
+              data-nav
               onClick={() => {
                 if (confirm) void run(confirm, () => setConfirm(null));
               }}

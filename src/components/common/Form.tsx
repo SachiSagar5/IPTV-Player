@@ -2,7 +2,7 @@
  * Form primitives: text input, switch, segmented control, filter chip row.
  */
 import { forwardRef, memo, useId } from 'react';
-import type { InputHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
 import { Icon } from './Icon';
 import type { IconName } from './Icon';
 
@@ -77,7 +77,13 @@ export const Input = memo(
 
 /* ---------------- Switch ---------------- */
 
-export interface SwitchProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'type' | 'size'> {
+// Button attributes, not input attributes: the control is a `<button
+// role="switch">`. It only ever looked like an input in the type, which was
+// harmless while nothing was forwarded, and wrong the moment anything was —
+// forwarding `rest` typed every handler as `MouseEventHandler<HTMLInputElement>`
+// onto an element that is not one.
+export interface SwitchProps
+  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onChange' | 'type'> {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   label: string;
@@ -90,6 +96,7 @@ export const Switch = memo(function Switch({
   label,
   description,
   disabled,
+  ...rest
 }: SwitchProps) {
   const id = useId();
   const descriptionId = description ? `${id}-description` : undefined;
@@ -105,6 +112,12 @@ export const Switch = memo(function Switch({
           </p>
         ) : null}
       </div>
+      {/* `rest` lands on the switch, not the wrapper: the wrapper is a <div> and
+          a TV remote cannot focus that, so forwarding here is the only way an
+          attribute like `data-nav` can reach anything. It is spread before
+          `className` — unlike `Input` above — because this className carries the
+          entire geometry of the track, and letting a caller's stray className win
+          would silently collapse the switch. */}
       <button
         id={id}
         type="button"
@@ -113,6 +126,7 @@ export const Switch = memo(function Switch({
         aria-describedby={descriptionId}
         disabled={disabled}
         onClick={() => onCheckedChange(!checked)}
+        {...rest}
         className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors duration-150 ${
           checked
             ? 'border-accent-400/60 bg-accent-500'
@@ -150,6 +164,13 @@ export interface SegmentedProps<T extends string | number> {
   ariaLabel: string;
   size?: 'sm' | 'md';
   className?: string;
+  /**
+   * Mark every option as a D-pad stop, so a remote can step sideways through
+   * them. Opt-in because `FilterBar` and `SeriesPage` also use this control and
+   * already sit inside their own navigable containers — marking their options
+   * would give a remote two competing targets in the same row.
+   */
+  dpadStops?: boolean;
 }
 
 export function SegmentedControl<T extends string | number>({
@@ -159,6 +180,7 @@ export function SegmentedControl<T extends string | number>({
   ariaLabel,
   size = 'md',
   className = '',
+  dpadStops = false,
 }: SegmentedProps<T>) {
   return (
     <div
@@ -178,6 +200,7 @@ export function SegmentedControl<T extends string | number>({
             type="button"
             aria-selected={selected}
             onClick={() => onChange(option.value)}
+            data-nav={dpadStops || undefined}
             className={`inline-flex items-center gap-1.5 rounded-md font-medium whitespace-nowrap transition-colors ${
               size === 'sm' ? 'h-[1.375rem] px-2.5 text-xs' : 'h-8 px-3 text-sm'
             } ${
