@@ -26,3 +26,9 @@ yarn-error.log*
 # Local test and scratch output
 coverage/
 .vite/
+
+# Capacitor native project — generated in CI by `cap add android` and rewritten
+# by scripts/prepare-android-tv.mjs. Never committed: it contains a binary
+# Gradle wrapper JAR and is fully described by that script.
+android/
+capacitor.config.*.tmp

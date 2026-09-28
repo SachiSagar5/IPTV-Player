@@ -1,0 +1,181 @@
+# Signed release artifacts.
+#
+# Runs when a `v*` tag is pushed, and produces both an installable APK and a
+# Play Store bundle from the same commit. The APK is what a sideloader wants;
+# the AAB is what the Play Console requires for a new listing.
+#
+# ## Required repository secrets
+#
+#   KEYSTORE          base64 of the .jks file:
+#                     base64 -i release.jks | pbcopy   (macOS)
+#                     base64 -w0 release.jks            (Linux)
+#   KEYSTORE_PASSWORD password for the keystore
+#   KEY_ALIAS         key alias inside the keystore
+#   KEY_PASSWORD      password for that key
+#
+# The keystore itself is never in the repository. If it is lost, no future
+# update can be published to an existing Play listing, so it belongs in a
+# password manager as well as here.
+name: Android TV release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build signed APK and AAB
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Check the signing secrets are present
+        # Fail here, in the first thirty seconds, rather than twenty minutes
+        # later inside Gradle with a message about a missing store file.
+        env:
+          KEYSTORE: ${{ secrets.KEYSTORE }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          missing=0
+          for name in KEYSTORE KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Secret $name is not set"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || exit 1
+
+      - name: Restore the keystore
+        env:
+          KEYSTORE: ${{ secrets.KEYSTORE }}
+        run: |
+          printf '%s' "$KEYSTORE" | base64 --decode > release.jks
+          # An empty file here would be a silent signing failure later.
+          test -s release.jks
+          ls -l release.jks
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run lint
+
+      - name: Build the web bundle
+        env:
+          CAPACITOR_BUILD: 'true'
+        run: npm run build
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install the Capacitor CLI (build-time only)
+        run: |
+          CAP_VERSION=$(node -p "require('./node_modules/@capacitor/core/package.json').version")
+          echo "Using Capacitor $CAP_VERSION"
+          npm install --no-save "@capacitor/cli@$CAP_VERSION" "@capacitor/android@$CAP_VERSION"
+
+      - name: Generate the Android project
+        env:
+          CI: 'true'
+        run: npx cap add android
+
+      - name: Sync the web bundle into the project
+        env:
+          CI: 'true'
+        run: npx cap sync android
+
+      - name: Make it an Android TV app
+        run: node scripts/prepare-android-tv.mjs
+
+      - name: Point Gradle at the SDK
+        run: echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+
+      - name: Stamp the version from the tag
+        # versionCode must strictly increase with every upload to Play, and
+        # Gradle cannot infer that from a tag name, so it is derived here.
+        # v1.2.3 -> code 10203, which stays monotonic for a long time and keeps
+        # major.minor.patch legible in the Play listing.
+        #
+        # These have to be replaced *inside* the `defaultConfig` block; appending
+        # them to the end of the file would put them outside `android {}` and
+        # Gradle would ignore them silently.
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          CODE="$(echo "$TAG" | awk -F'[.-]' '{printf "%d%02d%02d", $1, $2, $3}')"
+          NAME="IPTV-TV-$TAG"
+
+          GRADLE=android/app/build.gradle
+          sed -i "s/^\( *\)versionCode 1$/\1versionCode $CODE/" "$GRADLE"
+          sed -i "s/^\( *\)versionName \"1.0\"$/\1versionName \"$NAME\"/" "$GRADLE"
+
+          # Fail loudly rather than shipping a build that still says 1.0.
+          grep -q "versionCode $CODE" "$GRADLE" || {
+            echo "::error::Could not set versionCode $CODE in $GRADLE"; exit 1; }
+          grep -q "versionName \"$NAME\"" "$GRADLE" || {
+            echo "::error::Could not set versionName $NAME in $GRADLE"; exit 1; }
+
+          echo "Building $NAME (versionCode $CODE)"
+
+      - name: Build the signed APK and AAB
+        working-directory: android
+        env:
+          # Read by the signingConfig in scripts/prepare-android-tv.mjs.
+          KEYSTORE: ${{ github.workspace }}/release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease bundleRelease --no-daemon --stacktrace
+
+      - name: Collect and verify the artifacts
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          cp android/app/build/outputs/apk/release/app-release.apk "IPTV-TV-$TAG.apk"
+          cp android/app/build/outputs/bundle/release/app-release.aab "IPTV-TV-$TAG.aab"
+
+          # A release APK signed with the wrong key cannot be upgraded onto an
+          # installed copy, and the failure only appears on the user's device.
+          # Verifying the signature here is the only place it can be caught.
+          "$BUILD_TOOLS/apksigner" verify --print-certs "IPTV-TV-$TAG.apk"
+
+          ls -lh IPTV-TV-*.apk IPTV-TV-*.aab
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: IPTV-TV-release
+          path: |
+            IPTV-TV-*.apk
+            IPTV-TV-*.aab
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Attach to the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          # `workflow_dispatch` can be run on a tag that has no release yet.
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "$TAG" --generate-notes
+          fi
+          gh release upload "$TAG" IPTV-TV-*.apk IPTV-TV-*.aab --clobber

@@ -1,0 +1,113 @@
+# Debug APK for Android TV / Google TV / Fire TV.
+#
+# Runs on every push to main. The whole native build happens here: no Android
+# SDK, JDK, Gradle or Capacitor CLI is needed on a contributor's machine, and
+# the `android/` project is never committed (see scripts/prepare-android-tv.mjs).
+name: Android TV debug APK
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    name: Build IPTV-TV-debug.apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Capacitor 8's CLI requires >=22. The Vite build target is es2022, so
+          # this is the floor for both.
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run lint
+
+      - name: Build the web bundle
+        # CAPACITOR_BUILD drops vite-plugin-pwa, so the APK ships no service
+        # worker or Workbox runtime: in a WebView the bundle is already local
+        # and a SW has nothing to refresh.
+        env:
+          CAPACITOR_BUILD: 'true'
+        run: npm run build
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          # AGP 8.13 requires 17+; 21 is the current LTS.
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install the Capacitor CLI (build-time only)
+        # Version is read from the installed @capacitor/core so the CLI and the
+        # runtime plugin can never drift apart, and so bumping the dependency in
+        # package.json needs no edit here.
+        run: |
+          CAP_VERSION=$(node -p "require('./node_modules/@capacitor/core/package.json').version")
+          echo "Using Capacitor $CAP_VERSION"
+          npm install --no-save "@capacitor/cli@$CAP_VERSION" "@capacitor/android@$CAP_VERSION"
+
+      - name: Generate the Android project
+        env:
+          # Non-interactive: the CLI must never wait on a prompt in CI.
+          CI: 'true'
+        run: npx cap add android
+
+      - name: Sync the web bundle into the project
+        # Must come before prepare-android-tv.mjs, which relies on the file this
+        # step writes and whose output would otherwise be at risk of being
+        # rewritten afterwards.
+        env:
+          CI: 'true'
+        run: npx cap sync android
+
+      - name: Make it an Android TV app
+        run: node scripts/prepare-android-tv.mjs
+
+      - name: Point Gradle at the SDK
+        # ANDROID_HOME is set by setup-android, but AGP reads sdk.dir from this
+        # file, so it is written explicitly rather than relied upon.
+        run: echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+
+      - name: Build the debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Name the artifact
+        # The template always emits app-debug.apk. Renaming here means the
+        # download a user gets says what it is, and the artifact name is
+        # stable for anything downstream that fetches it.
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk IPTV-TV-debug.apk
+
+      - name: Verify it is a real, signed APK
+        # A green Gradle exit is not proof the artifact is installable: aapt
+        # reports the manifest as parsed, and apksigner confirms a signature
+        # exists. Both are cheap and catch a genuinely broken output.
+        run: |
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/aapt" \
+            dump badging IPTV-TV-debug.apk | head -20
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner" \
+            verify --print-certs IPTV-TV-debug.apk | head -10
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: IPTV-TV-debug
+          path: IPTV-TV-debug.apk
+          if-no-files-found: error
+          retention-days: 14
