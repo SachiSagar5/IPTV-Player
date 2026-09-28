@@ -108,7 +108,7 @@ export default function SeriesDetailPage() {
           <Link
             to="/series"
             data-nav
-            className="inline-flex w-fit items-center gap-1.5 text-xs text-mist-400 transition-colors hover:text-jade-300"
+            className="inline-flex w-fit items-center gap-1.5 text-xs text-mist-400 transition-colors hover:text-accent-300"
           >
             <Icon name="arrow-left" size={14} />
             All series
@@ -169,7 +169,7 @@ export default function SeriesDetailPage() {
         <div
           role="tablist"
           aria-label="Seasons"
-          className="row-scroll mb-4 flex gap-1.5 overflow-x-auto px-4 md:px-8"
+          className="row-scroll mb-5 flex gap-1.5 overflow-x-auto px-4 md:px-8"
         >
           {series.seasons.map((s) => {
             const active = s.season === season.season;
@@ -181,11 +181,20 @@ export default function SeriesDetailPage() {
                 data-nav
                 aria-selected={active}
                 onClick={() => setActiveSeason(s.season)}
-                className={`inline-flex h-8 shrink-0 items-center rounded-md px-3 text-xs font-semibold transition-colors ${
-                  active ? 'bg-ink-700 text-mist-50' : 'text-mist-400 hover:bg-ink-800 hover:text-mist-200'
+                className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-xs font-semibold transition-[background-color,color,box-shadow] duration-200 ${
+                  active
+                    ? 'bg-accent-500/15 text-mist-50 shadow-[inset_0_0_0_1px_rgb(var(--accent-400-rgb)/0.4)]'
+                    : 'text-mist-400 hover:bg-ink-850 hover:text-mist-100'
                 }`}
               >
                 {s.name}
+                <span
+                  className={`tabular-nums text-[10px] ${
+                    active ? 'text-accent-300' : 'text-mist-600'
+                  }`}
+                >
+                  {s.episodes.length}
+                </span>
               </button>
             );
           })}
@@ -195,7 +204,10 @@ export default function SeriesDetailPage() {
       {/* Episode list */}
       <section className="px-4 pb-4 md:px-8">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold tracking-tight text-mist-200">{season.name}</h2>
+          <h2 className="flex items-center gap-2.5 text-sm font-semibold tracking-tight text-mist-200">
+            <span aria-hidden="true" className="rule-accent h-3.5 w-0.5 rounded-full" />
+            {season.name}
+          </h2>
           <p className="text-xs tabular-nums text-mist-500">
             {season.episodes.length} episode{season.episodes.length === 1 ? '' : 's'}
           </p>
@@ -210,7 +222,7 @@ export default function SeriesDetailPage() {
               <li key={episode.id}>
                 <div
                   data-nav
-                  className="group/ep flex items-center gap-3 rounded-lg border border-transparent bg-ink-900/60 p-2 transition-colors hover:border-ink-700 hover:bg-ink-850 focus-within:border-jade-600"
+                  className="group/ep flex items-center gap-3 rounded-xl border border-white/6 bg-ink-900/50 p-2 transition-[background-color,border-color,transform] duration-200 hover:-translate-y-px hover:border-white/12 hover:bg-ink-850 focus-within:border-accent-500/50"
                 >
                   <Link
                     to={watchPath(episode)}
@@ -234,7 +246,7 @@ export default function SeriesDetailPage() {
                       {isResume ? (
                         <span className="absolute inset-x-0 bottom-0 h-0.5 bg-black/60">
                           <span
-                            className="block h-full bg-jade-400"
+                            className="block h-full bg-accent-400"
                             style={{ width: `${Math.round(progress.percent * 100)}%` }}
                           />
                         </span>

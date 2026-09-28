@@ -79,7 +79,7 @@ export default function PlaylistsPage() {
       />
 
       {formOpen ? (
-        <div className="mx-4 mb-6 rounded-xl border border-ink-700 bg-ink-900 p-5 md:mx-8">
+        <div className="mx-4 mb-6 rounded-2xl p-5 md:mx-8 surface-panel">
           <AddPlaylistForm />
         </div>
       ) : null}
@@ -122,12 +122,21 @@ export default function PlaylistsPage() {
               <li key={playlist.id}>
                 <div
                   data-nav
-                  className={`rounded-xl border p-4 transition-colors ${
+                  className={`surface-panel relative overflow-hidden rounded-2xl p-4 transition-[transform,border-color] duration-300 ${
                     isActive
-                      ? 'border-jade-600/50 bg-jade-500/6'
-                      : 'border-ink-700 bg-ink-900 hover:border-ink-600'
+                      ? 'border-accent-500/40'
+                      : 'hover:-translate-y-0.5 hover:border-white/12'
                   }`}
                 >
+                  {/* The active playlist gets an accent-lit left edge, so which
+                      one is in use is legible at a glance in a long list rather
+                      than only from a small pill in the corner. */}
+                  {isActive ? (
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-y-3 left-0 w-0.5 rounded-full bg-accent-400 shadow-[0_0_10px_1px_rgb(var(--accent-400-rgb)/0.5)]"
+                    />
+                  ) : null}
                   <div className="flex flex-wrap items-start gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
@@ -135,7 +144,7 @@ export default function PlaylistsPage() {
                           {playlist.name}
                         </h2>
                         {isActive ? (
-                          <span className="rounded-full bg-jade-500 px-1.5 py-0.5 text-[9px] font-bold tracking-[0.12em] text-ink-1000 uppercase">
+                          <span className="rounded-full bg-accent-500 px-1.5 py-0.5 text-[9px] font-bold tracking-[0.12em] text-ink-1000 uppercase">
                             Active
                           </span>
                         ) : null}

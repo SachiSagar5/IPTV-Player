@@ -173,7 +173,7 @@ export default function PlayerPage() {
             <p className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-mist-500">
               {item.group ? <span>{item.group}</span> : null}
               {item.language ? <span>{item.language}</span> : null}
-              {resume ? <span className="text-jade-400">{resume}</span> : null}
+              {resume ? <span className="text-accent-400">{resume}</span> : null}
             </p>
           </div>
 

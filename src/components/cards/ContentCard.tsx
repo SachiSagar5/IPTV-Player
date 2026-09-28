@@ -120,9 +120,11 @@ export const ContentCard = memo(function ContentCard({
       data-nav
       aria-label={label}
       {...(index != null && total != null ? { 'aria-posinset': index + 1, 'aria-setsize': total } : {})}
-      className={`card group/card relative block shrink-0 rounded-card outline-offset-4 ${fill ? 'w-full' : size.className} ${className}`}
+      className={`card group/card relative block shrink-0 rounded-card outline-offset-4 ${
+        fill ? 'w-full' : size.className
+      } ${className}`}
     >
-      <div className="card-art relative overflow-hidden rounded-card bg-ink-850 shadow-card transition-[transform,box-shadow] duration-300 ease-settle group-hover/card:-translate-y-1.5 group-hover/card:shadow-lift group-focus-visible/card:-translate-y-1.5 group-focus-visible/card:shadow-lift">
+      <div className="card-art card-hairline relative overflow-hidden rounded-card bg-ink-850 shadow-card transition-[transform,box-shadow] duration-300 ease-settle group-hover/card:-translate-y-2 group-hover/card:shadow-lift group-focus-visible/card:-translate-y-2 group-focus-visible/card:shadow-lift">
         <LazyImage
           src={artwork}
           alt={displayTitle}
@@ -135,9 +137,18 @@ export const ContentCard = memo(function ContentCard({
           className={variant === 'channel' ? 'p-[8%]' : ''}
         />
 
+        {/* Top-to-bottom scrim. Always present at a low opacity rather than
+            fading in on hover: it is what makes the chips legible over a pale
+            poster, and a chip that changes contrast on hover is unreadable
+            exactly when the pointer is closest to it. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/60 to-transparent opacity-80 transition-opacity duration-300 group-hover/card:opacity-100"
+        />
+
         {/* Live badge. Present only for live channels. */}
         {isLive ? (
-          <span className="pointer-events-none absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-bold tracking-widest text-live-400 uppercase backdrop-blur-sm">
+          <span className="pointer-events-none absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-full border border-live-500/30 bg-black/70 px-1.5 py-0.5 text-[9px] font-bold tracking-widest text-live-400 uppercase backdrop-blur-sm">
             <span className="live-pulse h-1.5 w-1.5 rounded-full bg-live-400" />
             Live
           </span>
@@ -147,19 +158,19 @@ export const ContentCard = memo(function ContentCard({
         {!isLive && (item.year || item.durationSec || rating !== undefined) ? (
           <div className="pointer-events-none absolute right-1.5 bottom-1.5 flex items-center gap-1">
             {yearLabel ? (
-              <span className="rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-semibold text-mist-200 backdrop-blur-sm transition-colors duration-200 group-hover/card:bg-black/85">
+              <span className="rounded-md border border-white/10 bg-black/65 px-1.5 py-0.5 text-[9px] font-semibold text-mist-200 backdrop-blur-sm transition-colors duration-200 group-hover/card:bg-black/85">
                 {yearLabel}
               </span>
             ) : null}
             {runtimeLabel ? (
-              <span className="rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-semibold text-mist-200 backdrop-blur-sm transition-colors duration-200 group-hover/card:bg-black/85">
+              <span className="rounded-md border border-white/10 bg-black/65 px-1.5 py-0.5 text-[9px] font-semibold text-mist-200 backdrop-blur-sm transition-colors duration-200 group-hover/card:bg-black/85">
                 {runtimeLabel}
               </span>
             ) : null}
             {/* Matching the chip background keeps the score legible over any
                 artwork instead of relying on the poster's own colours. */}
             {rating !== undefined ? (
-              <span className="rounded bg-black/70 px-1.5 py-0.5 backdrop-blur-sm transition-colors duration-200 group-hover/card:bg-black/85">
+              <span className="rounded-md border border-white/10 bg-black/65 px-1.5 py-0.5 backdrop-blur-sm transition-colors duration-200 group-hover/card:bg-black/85">
                 <RatingBadge rating={rating} compact />
               </span>
             ) : null}
@@ -170,7 +181,7 @@ export const ContentCard = memo(function ContentCard({
         {progressPercent > 0 ? (
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1 bg-black/60">
             <div
-              className="h-full bg-jade-400"
+              className="h-full bg-gradient-to-r from-accent-500 to-accent-300"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -180,9 +191,9 @@ export const ContentCard = memo(function ContentCard({
             The full-bleed scrim fades without scaling (scaling it would pull its
             own edges off the artwork and expose a ring of bare card); only the
             button itself pops. */}
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-0 transition-opacity duration-200 group-hover/card:opacity-100 group-focus-visible/card:opacity-100">
-          <span className="flex h-10 w-10 scale-75 items-center justify-center rounded-full bg-white/95 text-ink-1000 opacity-0 shadow-lift transition-[transform,opacity] duration-300 ease-present group-hover/card:scale-100 group-hover/card:opacity-100 group-focus-visible/card:scale-100 group-focus-visible/card:opacity-100">
-            <Icon name="play" size={18} filled />
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/75 via-black/10 to-transparent opacity-0 transition-opacity duration-200 group-hover/card:opacity-100 group-focus-visible/card:opacity-100">
+          <span className="flex h-11 w-11 scale-75 items-center justify-center rounded-full border border-white/20 bg-white/95 text-ink-1000 opacity-0 shadow-lift transition-[transform,opacity] duration-300 ease-present group-hover/card:scale-100 group-hover/card:opacity-100 group-focus-visible/card:scale-100 group-focus-visible/card:opacity-100">
+            <Icon name="play" size={19} filled />
           </span>
         </div>
 
@@ -197,7 +208,7 @@ export const ContentCard = memo(function ContentCard({
             title={favorite ? 'Remove from My List' : 'Add to My List'}
             className={`absolute top-1.5 right-1.5 flex h-7 w-7 items-center justify-center rounded-md border backdrop-blur-sm transition-all duration-200 focus-visible:opacity-100 ${
               favorite
-                ? 'border-jade-500/60 bg-jade-500/90 text-ink-1000 opacity-100'
+                ? 'border-accent-400/60 bg-accent-500/90 text-ink-1000 opacity-100'
                 : 'border-white/15 bg-black/60 text-mist-200 opacity-0 group-hover/card:opacity-100 focus-visible:opacity-100'
             }`}
           >
@@ -211,7 +222,7 @@ export const ContentCard = memo(function ContentCard({
 
       <div className="mt-2.5 px-0.5">
         <p
-          className={`truncate text-[13px] leading-tight font-medium text-mist-200 transition-colors group-hover/card:text-mist-50 ${
+          className={`truncate text-[13px] leading-tight font-medium text-mist-300 transition-colors group-hover/card:text-mist-50 ${
             variant === 'channel' ? 'text-center' : ''
           }`}
           title={displayTitle}
@@ -224,7 +235,7 @@ export const ContentCard = memo(function ContentCard({
           </p>
         ) : null}
         {progress && progress.duration > 0 ? (
-          <p className="mt-1 truncate text-[11px] leading-tight text-jade-400">
+          <p className="mt-1 truncate text-[11px] leading-tight font-medium text-accent-400">
             {formatTime(progress.position)} left
           </p>
         ) : null}

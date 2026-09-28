@@ -35,6 +35,15 @@ export interface UseFiltersOptions {
    * Left false everywhere else, which is what withholds them.
    */
   includeAdult?: boolean;
+  /**
+   * Entries to withhold regardless of filters — currently the live channels
+   * that have been recorded as failing to play.
+   *
+   * Applied at the same point as the parental gate rather than inside
+   * `applyFilters`, so a hidden channel cannot slip back in through a filter
+   * change, a sort, or a future code path that reaches for `items` directly.
+   */
+  excludeIds?: ReadonlySet<string>;
 }
 
 export interface UseFiltersResult {
@@ -55,6 +64,7 @@ export function useFilters(options: UseFiltersOptions = {}): UseFiltersResult {
     defaultSort = EMPTY_FILTERS.sort,
     source,
     includeAdult = false,
+    excludeIds,
   } = options;
   const parentControls = useAppSelector((s) => s.settings.parentControls);
   const [params, setParams] = useSearchParams();
@@ -122,14 +132,22 @@ export function useFilters(options: UseFiltersOptions = {}): UseFiltersResult {
     filters.favoriteOnly ||
     filters.query.trim() !== '';
 
-  // Withhold adult entries unless this surface opted into them. Done here, at
-  // the single point every catalog page filters through, so a new page cannot
-  // accidentally leak them by forgetting to filter.
+  // Withhold adult entries unless this surface opted into them, and withhold
+  // entries the caller has excluded. Done here, at the single point every
+  // catalog page filters through, so a new page cannot accidentally leak them
+  // by forgetting to filter.
   const candidates = useMemo(() => {
     const base = source ?? items;
-    if (includeAdult || !parentControls) return base;
-    return base.filter((item) => !isAdultItem(item));
-  }, [source, items, includeAdult, parentControls]);
+    const withholdAdult = !includeAdult && parentControls;
+    // Nothing to strip: hand back the original array so the identity that
+    // `applyFilters` memoises on is preserved and no copy is made per render.
+    if (!withholdAdult && excludeIds === undefined) return base;
+    return base.filter((item) => {
+      if (withholdAdult && isAdultItem(item)) return false;
+      if (excludeIds?.has(item.id)) return false;
+      return true;
+    });
+  }, [source, items, includeAdult, parentControls, excludeIds]);
 
   const result = useMemo(
     () => applyFilters(candidates, { ...filters, favoriteIds, progressById, kinds }),

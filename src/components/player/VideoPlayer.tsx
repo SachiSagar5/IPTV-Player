@@ -24,7 +24,13 @@ import { PlayerErrorOverlay } from './PlayerErrorOverlay';
 import { PlayerLoadingOverlay } from './PlayerLoadingOverlay';
 import { usePlayerKeys } from './usePlayerKeys';
 import { useFullscreen, usePictureInPicture } from './useFullscreen';
-import { markWatched, saveProgress, useAppSelector } from '@/store/appStore';
+import {
+  clearStreamFailure,
+  markWatched,
+  noteStreamFailure,
+  saveProgress,
+  useAppSelector,
+} from '@/store/appStore';
 import { formatEpisodeLabel } from '@/utils/format';
 
 export interface VideoPlayerProps {
@@ -93,11 +99,16 @@ export const VideoPlayer = memo(function VideoPlayer({
       },
       onFatalError: (error) => {
         playerStore.patch((s) => (s.item?.id === item.id ? { error, status: 'error' } : {}));
+        // The engine has already exhausted its recovery ladder, so this is the
+        // point where a live channel's failure is worth remembering.
+        noteStreamFailure(item, error);
       },
       onRecovered: () => {
         playerStore.patch((s) =>
           s.item?.id === item.id ? { status: 'playing', error: null } : {},
         );
+        // It came back, so whatever it recorded on the way in no longer holds.
+        clearStreamFailure(item.id);
       },
     });
 
@@ -230,7 +241,12 @@ export const VideoPlayer = memo(function VideoPlayer({
       // Never overwrite an error state with a spinner.
       patch((s) => (s.status === 'error' ? {} : { status: 'buffering' }));
     };
-    const onPlaying = (): void => patch({ status: 'playing' });
+    const onPlaying = (): void => {
+      patch({ status: 'playing' });
+      // Frames are actually arriving, which is the only reliable proof the
+      // channel is worth keeping. Cheap no-op when nothing is recorded.
+      clearStreamFailure(item.id);
+    };
     const onVolumeChange = (): void => {
       patch({ volume: media.volume, muted: media.muted });
     };
@@ -251,6 +267,10 @@ export const VideoPlayer = memo(function VideoPlayer({
             : 'Playback failed. The stream may be offline or temporarily unavailable.';
       const error: PlayerErrorInfo = { message, recoverable: true, attempts: 0 };
       patch({ error, status: 'error' });
+      // A decode/network error on the element itself never reaches the engine's
+      // error handler, so without this a live channel that dies here would stay
+      // in the list forever, failing the same way on every visit.
+      noteStreamFailure(item, { ...error, recoverable: code !== 4 });
     };
 
     media.addEventListener('loadedmetadata', onLoadedMetadata);

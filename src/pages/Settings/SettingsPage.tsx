@@ -95,71 +95,69 @@ export default function SettingsPage() {
             />
           </Row>
           <Row>
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-mist-50">Default quality</p>
-                <p className="mt-0.5 text-xs leading-relaxed text-mist-500">
-                  Auto follows the stream and adapts to available bandwidth.
-                </p>
-              </div>
-              <SegmentedControl
-                ariaLabel="Default quality"
-                size="sm"
-                value={settings.defaultQuality}
-                onChange={(value) => updateSettings({ defaultQuality: value })}
-                options={[
-                  { value: -1, label: 'Auto' },
-                  { value: 0, label: 'Low' },
-                  { value: 1, label: 'Mid' },
-                  { value: 2, label: 'High' },
-                ]}
-              />
-            </div>
+            <SettingRow
+              label="Default quality"
+              description="Auto follows the stream and adapts to available bandwidth."
+              control={
+                <SegmentedControl
+                  ariaLabel="Default quality"
+                  size="sm"
+                  value={settings.defaultQuality}
+                  onChange={(value) => updateSettings({ defaultQuality: value })}
+                  options={[
+                    { value: -1, label: 'Auto' },
+                    { value: 0, label: 'Low' },
+                    { value: 1, label: 'Mid' },
+                    { value: 2, label: 'High' },
+                  ]}
+                />
+              }
+            />
           </Row>
           <Row>
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-mist-50">Default volume</p>
-                <p className="mt-0.5 text-xs text-mist-500">
-                  {Math.round(settings.defaultVolume * 100)}%
-                </p>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={settings.defaultVolume}
-                onChange={(event) => updateSettings({ defaultVolume: Number(event.target.value) })}
-                aria-label="Default volume"
-                className="h-1 w-32 shrink-0 cursor-pointer appearance-none rounded-full bg-ink-700
-                  [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:rounded-full
-                  [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-jade-400
-                  [&::-webkit-slider-thumb]:mt-[-6px] [&::-webkit-slider-thumb]:h-3.5
-                  [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none
-                  [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-jade-400"
-              />
-            </div>
+            <SettingRow
+              label="Default volume"
+              description={`${Math.round(settings.defaultVolume * 100)}%`}
+              control={
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={settings.defaultVolume}
+                  onChange={(event) =>
+                    updateSettings({ defaultVolume: Number(event.target.value) })
+                  }
+                  aria-label="Default volume"
+                  className="h-1 w-32 cursor-pointer appearance-none rounded-full bg-ink-700
+                    [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:rounded-full
+                    [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-accent-400
+                    [&::-webkit-slider-thumb]:mt-[-6px] [&::-webkit-slider-thumb]:h-3.5
+                    [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none
+                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-400"
+                />
+              }
+            />
           </Row>
           <Row>
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-mist-50">Playback speed</p>
-                <p className="mt-0.5 text-xs text-mist-500">{settings.defaultPlaybackRate}x</p>
-              </div>
-              <SegmentedControl
-                ariaLabel="Default playback speed"
-                size="sm"
-                value={settings.defaultPlaybackRate}
-                onChange={(value) => updateSettings({ defaultPlaybackRate: value })}
-                options={[
-                  { value: 1, label: '1x' },
-                  { value: 1.25, label: '1.25x' },
-                  { value: 1.5, label: '1.5x' },
-                  { value: 2, label: '2x' },
-                ]}
-              />
-            </div>
+            <SettingRow
+              label="Playback speed"
+              description={`${settings.defaultPlaybackRate}x`}
+              control={
+                <SegmentedControl
+                  ariaLabel="Default playback speed"
+                  size="sm"
+                  value={settings.defaultPlaybackRate}
+                  onChange={(value) => updateSettings({ defaultPlaybackRate: value })}
+                  options={[
+                    { value: 1, label: '1x' },
+                    { value: 1.25, label: '1.25x' },
+                    { value: 1.5, label: '1.5x' },
+                    { value: 2, label: '2x' },
+                  ]}
+                />
+              }
+            />
           </Row>
         </div>
       </Section>
@@ -191,22 +189,22 @@ export default function SettingsPage() {
             />
           </Row>
           <Row>
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-mist-50">Card density</p>
-                <p className="mt-0.5 text-xs text-mist-500">Compact fits more titles per screen.</p>
-              </div>
-              <SegmentedControl
-                ariaLabel="Card density"
-                size="sm"
-                value={settings.cardDensity}
-                onChange={(value) => updateSettings({ cardDensity: value })}
-                options={[
-                  { value: 'comfortable', label: 'Comfortable' },
-                  { value: 'compact', label: 'Compact' },
-                ]}
-              />
-            </div>
+            <SettingRow
+              label="Card density"
+              description="Compact fits more titles per screen."
+              control={
+                <SegmentedControl
+                  ariaLabel="Card density"
+                  size="sm"
+                  value={settings.cardDensity}
+                  onChange={(value) => updateSettings({ cardDensity: value })}
+                  options={[
+                    { value: 'comfortable', label: 'Comfortable' },
+                    { value: 'compact', label: 'Compact' },
+                  ]}
+                />
+              }
+            />
           </Row>
           <Row>
             <Switch
@@ -233,25 +231,24 @@ export default function SettingsPage() {
             />
           </Row>
           <Row>
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-mist-50">Poster cache</p>
-                <p className="mt-0.5 text-xs text-mist-500">
-                  Clears every stored poster. Anything looked up again will be requested anew.
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  // Lazy so the poster system stays out of the first-paint bundle.
-                  void import('@/store/posterStore')
-                    .then((m) => m.clearAllPosters())
-                    .catch(() => undefined);
-                }}
-              >
-                Clear
-              </Button>
-            </div>
+            <SettingRow
+              label="Poster cache"
+              description="Clears every stored poster. Anything looked up again will be requested anew."
+              control={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    // Lazy so the poster system stays out of the first-paint bundle.
+                    void import('@/store/posterStore')
+                      .then((m) => m.clearAllPosters())
+                      .catch(() => undefined);
+                  }}
+                >
+                  Clear
+                </Button>
+              }
+            />
           </Row>
         </div>
       </Section>
@@ -276,19 +273,19 @@ export default function SettingsPage() {
           </Row>
           {settings.parentControls ? (
             <Row>
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-mist-50">PIN</p>
-                  <p className="mt-0.5 text-xs text-mist-500">
-                    {customPin
-                      ? 'A PIN of your own is set on this device.'
-                      : 'Using the default PIN, 8345. Change it to something a child is unlikely to guess.'}
-                  </p>
-                </div>
-                <Button variant="ghost" onClick={() => setPinEditorOpen(true)}>
-                  {customPin ? 'Change PIN' : 'Set a PIN'}
-                </Button>
-              </div>
+              <SettingRow
+                label="PIN"
+                description={
+                  customPin
+                    ? 'A PIN of your own is set on this device.'
+                    : 'Using the default PIN, 8345. Change it to something a child is unlikely to guess.'
+                }
+                control={
+                  <Button variant="ghost" size="sm" onClick={() => setPinEditorOpen(true)}>
+                    {customPin ? 'Change PIN' : 'Set a PIN'}
+                  </Button>
+                }
+              />
             </Row>
           ) : null}
         </div>
@@ -311,41 +308,46 @@ export default function SettingsPage() {
       >
         <div className="divide-y divide-ink-700">
           <Row>
-            <div className="min-w-0">
-              <label
-                htmlFor="omdb-key"
-                className="text-sm font-medium text-mist-50"
-              >
-                OMDb API key
-              </label>
-              <p className="mt-0.5 text-xs text-mist-500">
-                Optional. Ratings come from a keyless public service by default. Add your
-                free key from omdbapi.com to use OMDb instead — it is kept on this device
-                only, never in the app bundle, and is subject to OMDb&apos;s 1,000
-                requests/day limit. Leave it blank to stay on the keyless source.
-              </p>
-            </div>
-            <div className="flex w-full max-w-56 shrink-0 items-center gap-2">
-              <input
-                id="omdb-key"
-                type="password"
-                value={settings.omdbApiKey}
-                onChange={(event) => updateSettings({ omdbApiKey: event.target.value })}
-                placeholder="Not set"
-                autoComplete="off"
-                spellCheck={false}
-                className="w-full rounded-card border border-ink-700 bg-ink-900 px-3 py-2 text-sm
-                  text-mist-50 placeholder:text-mist-600 focus:border-jade-400 focus:outline-none"
-              />
-              {settings.omdbApiKey ? (
-                <Button
-                  variant="ghost"
-                  onClick={() => updateSettings({ omdbApiKey: '' })}
-                  aria-label="Clear OMDb API key"
-                >
-                  Clear
-                </Button>
-              ) : null}
+            {/* A real <label> rather than SettingRow's <p>, and deliberately not the
+                24px control slot: a text field is taller than a switch and wants to
+                hang below the first line instead of being squeezed into it. This row
+                also lost its flex wrapper at some point, which stacked the field
+                under the label while the `max-w-56` width still assumed side by side. */}
+            <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 sm:flex-nowrap">
+              <div className="min-w-0 flex-1">
+                <label htmlFor="omdb-key" className="text-sm font-medium text-mist-50">
+                  OMDb API key
+                </label>
+                <p className="mt-0.5 text-xs leading-relaxed text-mist-500">
+                  Optional. Ratings come from a keyless public service by default. Add your
+                  free key from omdbapi.com to use OMDb instead — it is kept on this device
+                  only, never in the app bundle, and is subject to OMDb&apos;s 1,000
+                  requests/day limit. Leave it blank to stay on the keyless source.
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <input
+                  id="omdb-key"
+                  type="password"
+                  value={settings.omdbApiKey}
+                  onChange={(event) => updateSettings({ omdbApiKey: event.target.value })}
+                  placeholder="Not set"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="w-full max-w-56 rounded-card border border-ink-700 bg-ink-900 px-3 py-2 text-sm
+                    text-mist-50 placeholder:text-mist-600 focus:border-accent-400 focus:outline-none"
+                />
+                {settings.omdbApiKey ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => updateSettings({ omdbApiKey: '' })}
+                    aria-label="Clear OMDb API key"
+                  >
+                    Clear
+                  </Button>
+                ) : null}
+              </div>
             </div>
           </Row>
         </div>
@@ -456,7 +458,7 @@ export default function SettingsPage() {
                 setPinError(null);
               }}
               className="w-full rounded-card border border-ink-700 bg-ink-900 px-3 py-2 text-sm
-                text-mist-50 focus:border-jade-400 focus:outline-none"
+                text-mist-50 focus:border-accent-400 focus:outline-none"
             />
           </label>
           <label className="block">
@@ -474,7 +476,7 @@ export default function SettingsPage() {
                 if (event.key === 'Enter') event.currentTarget.form?.requestSubmit?.();
               }}
               className="w-full rounded-card border border-ink-700 bg-ink-900 px-3 py-2 text-sm
-                text-mist-50 focus:border-jade-400 focus:outline-none"
+                text-mist-50 focus:border-accent-400 focus:outline-none"
             />
           </label>
           {pinError ? <p className="text-xs text-red-400">{pinError}</p> : null}
@@ -539,20 +541,59 @@ function Section({
 }) {
   return (
     <section className="px-4 pb-8 md:px-8">
-      <h2 className="text-sm font-semibold tracking-tight text-mist-100">{title}</h2>
-      {description ? <p className="mt-0.5 text-xs text-mist-500">{description}</p> : null}
-      <div className="mt-3 rounded-xl border border-ink-700 bg-ink-900">{children}</div>
+      <div className="mb-3 flex items-center gap-2.5">
+        <span aria-hidden="true" className="rule-accent h-3.5 w-0.5 shrink-0 rounded-full" />
+        <h2 className="text-sm font-semibold tracking-tight text-mist-100">{title}</h2>
+      </div>
+      {description ? <p className="mt-1 mb-3 text-xs text-mist-500">{description}</p> : null}
+      <div className="surface-panel rounded-2xl">{children}</div>
     </section>
   );
 }
 
 function Row({ children }: { children: ReactNode }) {
-  return <div className="p-4">{children}</div>;
+  return <div className="p-4 transition-colors hover:bg-ink-850/40">{children}</div>;
+}
+
+/**
+ * A settings row: label and description on the left, a single control on the right.
+ *
+ * The control slot is a fixed 24px box (`h-6`) aligned to the first line of the
+ * label. That height is the one thing every control here shares — a 24px switch,
+ * a 28px segmented control, a 32px button — so centring inside it stops a 4px
+ * range slider from floating up to the top of the row and stops taller controls
+ * from overhanging the label. Rows with no description have nothing to align
+ * against, so they centre the whole thing instead.
+ */
+function SettingRow({
+  label,
+  description,
+  control,
+}: {
+  label: string;
+  description?: ReactNode;
+  control: ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 sm:flex-nowrap">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-mist-50">{label}</p>
+        {description ? (
+          <p className="mt-0.5 text-xs leading-relaxed text-mist-500">{description}</p>
+        ) : null}
+      </div>
+      <div
+        className={`flex h-6 shrink-0 items-center ${description ? 'sm:self-start' : 'sm:self-center'}`}
+      >
+        {control}
+      </div>
+    </div>
+  );
 }
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-ink-700 bg-ink-850 px-3 py-2.5">
+    <div className="surface-panel rounded-xl px-3 py-2.5">
       <dt className="text-[10px] font-semibold tracking-[0.12em] text-mist-500 uppercase">
         {label}
       </dt>

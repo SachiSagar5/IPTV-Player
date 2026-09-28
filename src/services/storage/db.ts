@@ -15,7 +15,7 @@
  */
 
 export const DB_NAME = 'iptv-player';
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 /** Entries per IndexedDB record. Tuned for write latency vs. read count. */
 export const ITEMS_PER_CHUNK = 2000;
@@ -29,6 +29,7 @@ export const STORE = {
   kv: 'kv',
   posters: 'posters',
   meta: 'meta',
+  liveHealth: 'liveHealth',
 } as const;
 
 export type StoreName = (typeof STORE)[keyof typeof STORE];
@@ -82,6 +83,16 @@ function upgradeSchema(db: IDBDatabase): void {
     // ones actually watched do, and those must not be recorded as "no rating".
     const store = db.createObjectStore(STORE.meta, { keyPath: 'key' });
     store.createIndex('at', 'at');
+  }
+  if (!db.objectStoreNames.contains(STORE.liveHealth)) {
+    // keyPath 'contentId' — one row per channel, overwritten on each failure
+    // rather than appended, so a channel that errors repeatedly costs one row.
+    // `at` is the TTL index (rows are pruned once they stop being useful) and
+    // `playlistId` makes "forget this playlist" a range delete instead of a
+    // full-table scan.
+    const store = db.createObjectStore(STORE.liveHealth, { keyPath: 'contentId' });
+    store.createIndex('at', 'at');
+    store.createIndex('playlistId', 'playlistId');
   }
 }
 

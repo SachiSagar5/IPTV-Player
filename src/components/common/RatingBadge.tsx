@@ -20,7 +20,7 @@ interface RatingBadgeProps {
 
 /** IMDb's own bands: green 7+, gold 6+, orange 5+, red below. */
 function bandColor(rating: number): string {
-  if (rating >= 7) return 'text-jade-300';
+  if (rating >= 7) return 'text-accent-300';
   if (rating >= 6) return 'text-yellow-300';
   if (rating >= 5) return 'text-orange-300';
   return 'text-red-300';

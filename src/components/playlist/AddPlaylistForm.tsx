@@ -108,7 +108,7 @@ export const AddPlaylistForm = memo(function AddPlaylistForm({
           aria-valuenow={Math.round(busy.progress.ratio * 100)}
         >
           <div
-            className="h-full rounded-full bg-jade-400 transition-[width] duration-200"
+            className="h-full rounded-full bg-accent-400 transition-[width] duration-200"
             style={{ width: `${Math.round(busy.progress.ratio * 100)}%` }}
           />
         </div>

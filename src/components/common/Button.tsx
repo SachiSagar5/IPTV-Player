@@ -16,18 +16,31 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'subtle';
 type Size = 'sm' | 'md' | 'lg' | 'xl';
 
 const BASE =
-  'inline-flex items-center justify-center gap-2 rounded-md font-semibold whitespace-nowrap ' +
-  'transition-[background-color,color,border-color,transform,opacity] duration-150 ' +
+  'relative inline-flex items-center justify-center gap-2 rounded-lg font-semibold whitespace-nowrap ' +
+  'transition-[background-color,color,border-color,box-shadow,transform,opacity] duration-150 ' +
   'disabled:opacity-45 disabled:pointer-events-none select-none';
 
 const VARIANTS: Record<Variant, string> = {
+  // A gradient plus a bloom rather than flat fill: at this size the button is
+  // usually the only saturated object on screen, and a flat accent fill reads as
+  // a placeholder next to lit poster artwork.
+  //
+  // `text-ink-1000` on this gradient is AA at the darkest stop: accent-500 is
+  // ~4.7:1 against near-black, and every other stop is far clear of it. Push the
+  // bottom stop any darker (accent-600 is ~3.3:1) and the label stops passing.
   primary:
-    'bg-jade-500 text-ink-1000 hover:bg-jade-400 active:bg-jade-600 shadow-[0_1px_0_rgba(255,255,255,0.15)_inset]',
+    'bg-gradient-to-b from-accent-300 to-accent-500 text-ink-1000 shadow-glow ' +
+    'hover:from-accent-200 hover:to-accent-400 hover:shadow-glow-lg active:from-accent-500 active:to-accent-600 ' +
+    'border border-accent-300/40',
   secondary:
-    'bg-ink-700 text-mist-50 hover:bg-ink-600 active:bg-ink-750 border border-ink-600',
-  ghost: 'bg-transparent text-mist-200 hover:bg-ink-800 hover:text-mist-50',
-  subtle: 'bg-ink-800/80 text-mist-200 hover:bg-ink-700 hover:text-mist-50 border border-ink-700',
-  danger: 'bg-live-500/15 text-live-400 hover:bg-live-500/25 border border-live-500/35',
+    'bg-gradient-to-b from-ink-750 to-ink-800 text-mist-50 border border-ink-600 ' +
+    'hover:border-ink-500 hover:from-ink-700 hover:to-ink-750 active:from-ink-800',
+  ghost: 'bg-transparent text-mist-300 hover:bg-ink-800 hover:text-mist-50',
+  subtle:
+    'bg-ink-850/80 text-mist-200 border border-ink-700 hover:bg-ink-800 hover:text-mist-50 ' +
+    'backdrop-blur-sm',
+  danger:
+    'bg-live-500/12 text-live-400 border border-live-500/35 hover:bg-live-500/22 hover:border-live-500/50',
 };
 
 const SIZES: Record<Size, string> = {

@@ -52,7 +52,7 @@ export const SeriesCard = memo(function SeriesCard({ series, index, total }: Ser
       data-nav
       tabIndex={0}
       aria-label={`${title}, ${series.episodeCount} episodes`}
-      className="card group/card block min-w-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jade-400"
+      className="card group/card block min-w-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400"
     >
       <div className="card-art relative overflow-hidden rounded-card bg-ink-850 shadow-card transition-[transform,box-shadow] duration-300 ease-settle group-hover/card:-translate-y-1.5 group-hover/card:shadow-lift group-focus-visible/card:-translate-y-1.5 group-focus-visible/card:shadow-lift">
         <LazyImage
@@ -82,7 +82,7 @@ export const SeriesCard = memo(function SeriesCard({ series, index, total }: Ser
         {resume ? (
           <div className="absolute inset-x-0 bottom-0 h-1 bg-black/60">
             <div
-              className="h-full bg-jade-400"
+              className="h-full bg-accent-400"
               style={{ width: `${Math.round(remaining * 100)}%` }}
             />
           </div>

@@ -21,6 +21,8 @@ import type { ContentItem, PlaybackProgress } from '@/types';
 import { ButtonLink, IconButton } from '@/components/common/Button';
 import { Icon } from '@/components/common/Icon';
 import { LazyImage } from '@/components/common/LazyImage';
+import { RatingBadge } from '@/components/common/RatingBadge';
+import { useItemRating } from '@/hooks/useRating';
 import { cleanTitle } from '@/services/m3u/categorize';
 import { usePoster } from '@/hooks/usePoster';
 import { useAppSelector } from '@/store/appStore';
@@ -66,6 +68,14 @@ export const Hero = memo(function Hero({
   const art = artwork ? upscaleArtwork(artwork) : '';
   const artCss = art ? `url("${encodeURI(art)}")` : undefined;
 
+  // A rating is the one extra confidence signal the hero can carry, and it rides
+  // the same third-party opt-in as the artwork. A live channel has no rating.
+  const rating = useItemRating({
+    kind: item.kind,
+    title: item.name,
+    enabled: autoFetchPosters && !isLive,
+  });
+
   const meta: string[] = [];
   if (item.year) meta.push(String(item.year));
   if (item.durationSec) meta.push(formatDuration(item.durationSec));
@@ -83,7 +93,7 @@ export const Hero = memo(function Hero({
       {artCss ? (
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-30 scale-110 opacity-40 blur-3xl saturate-150"
+          className="absolute inset-0 -z-30 scale-110 opacity-45 blur-3xl saturate-160"
           style={{ backgroundImage: artCss, backgroundSize: 'cover', backgroundPosition: 'center 22%' }}
         />
       ) : null}
@@ -108,28 +118,47 @@ export const Hero = memo(function Hero({
       {/* 3. Scrims: left for the headline, bottom to melt into the first row. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-gradient-to-r from-ink-950 from-5% via-ink-950/90 to-ink-950/25"
+        className="absolute inset-0 -z-10 bg-gradient-to-r from-ink-950 from-5% via-ink-950/90 to-ink-950/20"
       />
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 top-0 -z-10 h-32 bg-gradient-to-b from-ink-950/90 to-transparent"
+        className="absolute inset-x-0 top-0 -z-10 h-36 bg-gradient-to-b from-ink-950/90 to-transparent"
       />
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10 bg-gradient-to-t from-ink-950 via-ink-950/45 to-transparent"
       />
+      {/* Corner vignette: pulls the eye off the very edges of a wide screen, where
+          the poster crop otherwise leaves a hard seam. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10 shadow-[inset_0_0_140px_40px_rgba(5,6,9,0.75)]"
+      />
 
       <div className="flex flex-col gap-7 px-4 pt-28 pb-12 sm:pt-32 md:flex-row md:items-end md:gap-10 md:px-8 md:pt-40 md:pb-16">
         <div className="min-w-0 flex-1">
-          {isLive ? (
-            <span className="animate-rise mb-3 inline-flex items-center gap-1.5 rounded-full border border-live-500/40 bg-live-500/12 px-2.5 py-1 text-[10px] font-bold tracking-[0.14em] text-live-400 uppercase">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-live-400" />
-              Live now
-            </span>
-          ) : null}
+          <div className="animate-rise mb-3.5 flex flex-wrap items-center gap-2">
+            {isLive ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-live-500/40 bg-live-500/12 px-2.5 py-1 text-[10px] font-bold tracking-[0.14em] text-live-400 uppercase">
+                <span className="live-pulse h-1.5 w-1.5 rounded-full bg-live-400 shadow-[0_0_8px_2px_rgba(255,90,90,0.7)]" />
+                Live now
+              </span>
+            ) : null}
+            {resume ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-ink-600/80 bg-ink-850/80 px-2.5 py-1 text-[10px] font-bold tracking-[0.14em] text-mist-300 uppercase backdrop-blur-sm">
+                <Icon name="clock" size={11} />
+                Pick up where you left off
+              </span>
+            ) : null}
+            {rating !== undefined ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-ink-600/80 bg-ink-850/80 px-2.5 py-1 text-[10px] font-bold tracking-[0.14em] uppercase backdrop-blur-sm">
+                <RatingBadge rating={rating} />
+              </span>
+            ) : null}
+          </div>
 
           <h1
-            className="animate-rise text-balance text-3xl leading-[1.05] font-bold tracking-tight text-mist-50 drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)] sm:text-4xl lg:text-5xl"
+            className="animate-rise text-display text-3xl font-bold text-mist-50 drop-shadow-[0_4px_24px_rgba(0,0,0,0.75)] sm:text-4xl lg:text-6xl"
             style={{ animationDelay: '40ms' }}
           >
             {title}
@@ -137,13 +166,19 @@ export const Hero = memo(function Hero({
 
           {meta.length > 0 ? (
             <div
-              className="animate-rise mt-3.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-mist-300 sm:text-sm"
+              className="animate-rise mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs text-mist-300 sm:text-sm"
               style={{ animationDelay: '100ms' }}
             >
               {meta.map((entry, i) => (
                 <span key={entry} className="inline-flex items-center gap-2.5">
-                  {i > 0 ? <span className="h-1 w-1 rounded-full bg-mist-500" /> : null}
-                  {entry}
+                  {i > 0 ? <span className="h-1 w-1 rounded-full bg-mist-500/70" /> : null}
+                  <span
+                    className={
+                      entry === 'Live' ? 'font-semibold text-live-400' : undefined
+                    }
+                  >
+                    {entry}
+                  </span>
                 </span>
               ))}
             </div>
@@ -153,11 +188,13 @@ export const Hero = memo(function Hero({
             <div className="animate-rise mt-6 max-w-md" style={{ animationDelay: '160ms' }}>
               <div className="h-1 overflow-hidden rounded-full bg-ink-700/80">
                 <div
-                  className="h-full rounded-full bg-jade-400"
+                  className="h-full rounded-full bg-gradient-to-r from-accent-500 to-accent-300 shadow-[0_0_12px_rgb(var(--accent-400-rgb)/0.5)]"
                   style={{ width: `${Math.round(progress.percent * 100)}%` }}
                 />
               </div>
-              <p className="mt-2 text-xs text-mist-400">{remaining} remaining</p>
+              <p className="mt-2 text-xs text-mist-400">
+                {remaining} remaining · {Math.round(progress.percent * 100)}% watched
+              </p>
             </div>
           ) : null}
 
@@ -165,7 +202,12 @@ export const Hero = memo(function Hero({
             className="animate-rise mt-7 flex flex-wrap items-center gap-2.5"
             style={{ animationDelay: '220ms' }}
           >
-            <ButtonLink to={watchPath(item)} size="lg" icon="play">
+            <ButtonLink
+              to={watchPath(item)}
+              size="lg"
+              icon="play"
+              className="sheen relative overflow-hidden shadow-glow"
+            >
               {resume ? 'Resume' : 'Play'}
             </ButtonLink>
 

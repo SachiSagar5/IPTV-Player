@@ -179,7 +179,7 @@ export const PlayerControls = memo(function PlayerControls({
             </div>
             {seekingDisabled ? (
               <div className="flex h-4 items-center">
-                <div className="h-1 w-full rounded-full bg-jade-500/70" />
+                <div className="h-1 w-full rounded-full bg-accent-500/70" />
               </div>
             ) : (
               <input
@@ -193,11 +193,11 @@ export const PlayerControls = memo(function PlayerControls({
                 aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
                 className="relative z-10 h-4 w-full cursor-pointer appearance-none bg-transparent
                   [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:rounded-full
-                  [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-jade-400
+                  [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-accent-400
                   [&::-webkit-slider-runnable-track]:h-1 [&::-webkit-slider-runnable-track]:rounded-full
                   [&::-webkit-slider-thumb]:mt-[-5px] [&::-webkit-slider-thumb]:h-3.5
                   [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none
-                  [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-jade-400
+                  [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-400
                   [&::-webkit-slider-thumb]:shadow-[0_0_0_3px_rgba(0,0,0,0.45)]"
               />
             )}
@@ -530,7 +530,7 @@ function MenuItem({
       aria-checked={active}
       onClick={onClick}
       className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors ${
-        active ? 'text-jade-300' : 'text-white/85 hover:bg-white/10'
+        active ? 'text-accent-300' : 'text-white/85 hover:bg-white/10'
       }`}
     >
       <Icon name={active ? 'check' : 'minus'} size={14} className={active ? '' : 'opacity-0'} />

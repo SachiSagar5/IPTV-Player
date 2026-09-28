@@ -55,7 +55,7 @@ export const PlaylistSwitcher = memo(function PlaylistSwitcher() {
       <button
         type="button"
         onClick={() => navigate(ROUTES.playlists)}
-        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-ink-600 bg-ink-850 px-2.5 text-xs font-medium text-mist-200 transition-colors hover:border-jade-600 hover:text-mist-50"
+        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-ink-600 bg-ink-850/80 px-2.5 text-xs font-medium text-mist-200 backdrop-blur-sm transition-colors hover:border-accent-600/60 hover:bg-ink-800 hover:text-mist-50"
       >
         <Icon name="plus" size={14} />
         <span className="hidden sm:inline">Add playlist</span>
@@ -72,19 +72,30 @@ export const PlaylistSwitcher = memo(function PlaylistSwitcher() {
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label={`Current playlist: ${active?.name ?? 'None'}. Change playlist`}
-        className="inline-flex h-8 max-w-[9.5rem] items-center gap-1.5 rounded-md border border-ink-600 bg-ink-850 pl-2.5 pr-2 text-xs font-medium text-mist-200 transition-colors hover:border-ink-500 hover:text-mist-50 md:max-w-none"
+        className="inline-flex h-8 max-w-[9.5rem] items-center gap-1.5 rounded-lg border border-ink-600 bg-ink-850/80 py-0 pr-2 pl-2.5 text-xs font-medium text-mist-200 backdrop-blur-sm transition-colors hover:border-ink-500 hover:bg-ink-800 hover:text-mist-50 md:max-w-none"
       >
         {busy ? <Spinner size={13} /> : null}
+        <span
+          aria-hidden="true"
+          className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-400 shadow-[0_0_6px_1px_rgb(var(--accent-400-rgb)/0.6)]"
+        />
         <span className="truncate">{active?.name ?? 'Select playlist'}</span>
-        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={13} className="text-mist-500" />
+        <Icon
+          name={open ? 'chevron-up' : 'chevron-down'}
+          size={13}
+          className="shrink-0 text-mist-500 transition-transform duration-200"
+        />
       </button>
 
       {open ? (
         <div
           role="listbox"
           aria-label="Playlists"
-          className="animate-scale-in absolute right-0 z-50 mt-1.5 w-72 origin-top-right overflow-hidden rounded-lg border border-ink-700 bg-ink-900 shadow-lift"
+          className="animate-scale-in absolute right-0 z-50 mt-2 w-72 origin-top-right overflow-hidden rounded-xl border border-white/8 bg-ink-900/95 shadow-lift backdrop-blur-xl"
         >
+          <p className="border-b border-white/6 px-3 py-2 text-[10px] font-semibold tracking-[0.14em] text-mist-500 uppercase">
+            {playlists.length} playlist{playlists.length === 1 ? '' : 's'} on this device
+          </p>
           <ul className="max-h-72 overflow-y-auto py-1">
             {playlists.map((playlist) => {
               const selected = playlist.id === activeId;
@@ -97,30 +108,38 @@ export const PlaylistSwitcher = memo(function PlaylistSwitcher() {
                     data-nav
                     onClick={() => select(playlist.id)}
                     className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors ${
-                      selected ? 'bg-ink-750' : 'hover:bg-ink-800'
+                      selected ? 'bg-accent-500/10' : 'hover:bg-ink-800'
                     }`}
                   >
                     <span
                       className={`h-2 w-2 shrink-0 rounded-full ${
-                        selected ? 'bg-jade-400' : 'bg-ink-600'
+                        selected
+                          ? 'bg-accent-400 shadow-[0_0_8px_1px_rgb(var(--accent-400-rgb)/0.6)]'
+                          : 'bg-ink-600'
                       }`}
                       aria-hidden="true"
                     />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm text-mist-50">{playlist.name}</span>
+                      <span
+                        className={`block truncate text-sm ${
+                          selected ? 'font-medium text-mist-50' : 'text-mist-200'
+                        }`}
+                      >
+                        {playlist.name}
+                      </span>
                       <span className="block truncate text-[11px] text-mist-500">
                         {playlist.status === 'ready'
                           ? `${formatCount(playlist.itemCount)} items`
                           : playlist.status}
                       </span>
                     </span>
-                    {selected ? <Icon name="check" size={15} className="text-jade-400" /> : null}
+                    {selected ? <Icon name="check" size={15} className="text-accent-400" /> : null}
                   </button>
                 </li>
               );
             })}
           </ul>
-          <div className="border-t border-ink-700 p-1.5">
+          <div className="border-t border-white/6 p-1.5">
             <button
               type="button"
               data-nav

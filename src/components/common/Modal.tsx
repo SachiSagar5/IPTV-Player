@@ -78,11 +78,11 @@ export function Modal({
     <dialog
       ref={ref}
       aria-labelledby="modal-title"
-      className={`m-auto w-[calc(100vw-2rem)] ${SIZES[size]} rounded-xl border border-ink-700 bg-ink-900 p-0 text-mist-50 shadow-lift backdrop:bg-black/70 backdrop:backdrop-blur-sm`}
+      className={`m-auto w-[calc(100vw-2rem)] ${SIZES[size]} overflow-hidden rounded-2xl border border-white/8 bg-ink-900/95 p-0 text-mist-50 shadow-lift backdrop:bg-black/75 backdrop:backdrop-blur-md`}
     >
-      <div className="flex items-start gap-3 border-b border-ink-700 px-5 py-4">
+      <div className="edge-light flex items-start gap-3 border-b border-white/6 bg-ink-850/40 px-5 py-4">
         <div className="min-w-0 flex-1">
-          <h2 id="modal-title" className="text-base font-semibold">
+          <h2 id="modal-title" className="text-base font-semibold tracking-tight text-mist-50">
             {title}
           </h2>
           {description ? (
@@ -100,7 +100,7 @@ export function Modal({
       </div>
       {children ? <div className="max-h-[70dvh] overflow-y-auto px-5 py-4">{children}</div> : null}
       {footer ? (
-        <div className="flex flex-wrap justify-end gap-2 border-t border-ink-700 px-5 py-3.5">
+        <div className="flex flex-wrap justify-end gap-2 border-t border-white/6 bg-ink-850/30 px-5 py-3.5">
           {footer}
         </div>
       ) : null}

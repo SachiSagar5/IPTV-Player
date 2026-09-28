@@ -21,7 +21,7 @@ export function BootGate({ children }: { children: ReactNode }) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-ink-950">
         <div className="flex flex-col items-center gap-3 text-mist-500">
-          <Spinner size={26} className="text-jade-400" />
+          <Spinner size={26} className="text-accent-400" />
           <p className="text-xs font-medium tracking-[0.16em] uppercase">Loading library</p>
         </div>
       </div>

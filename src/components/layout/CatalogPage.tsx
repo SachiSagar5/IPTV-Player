@@ -8,6 +8,7 @@
  */
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import type { ContentItem } from '@/types';
 import { PageHeader, PageEnd, PageSection } from './PageHeader';
 import { FilterBar } from './FilterBar';
@@ -36,6 +37,13 @@ export interface CatalogPageProps {
   defaultSort?: SortKey;
   emptyTitle: string;
   emptyMessage: string;
+  /**
+   * Entries to withhold from this surface. Live TV passes the channels recorded
+   * as failing to play, so a broken channel costs nothing to browse past.
+   */
+  excludeIds?: ReadonlySet<string>;
+  /** Rendered under the title and above the filters — e.g. a hiding notice. */
+  notice?: ReactNode;
 }
 
 export const CatalogPage = memo(function CatalogPage({
@@ -49,10 +57,12 @@ export const CatalogPage = memo(function CatalogPage({
   defaultSort = 'title',
   emptyTitle,
   emptyMessage,
+  excludeIds,
+  notice,
 }: CatalogPageProps) {
   const kinds = useMemo(() => new Set<ContentItem['kind']>([kind]), [kind]);
   const { filters, setFilter, clearAll, hasActive, result, progressById, favoriteIds } =
-    useFilters({ kinds, defaultSort });
+    useFilters({ kinds, defaultSort, excludeIds });
   const itemCount = useAppSelector((s) => s.items.length);
   const rootRef = useRef<HTMLDivElement>(null);
   const [limit, setLimit] = useState(pageSize);
@@ -93,7 +103,9 @@ export const CatalogPage = memo(function CatalogPage({
             </>
           )
         }
-      />
+      >
+        {notice}
+      </PageHeader>
 
       <FilterBar
         filters={filters}

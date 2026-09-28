@@ -124,29 +124,33 @@ export const TopNav = memo(function TopNav() {
   return (
     <>
       <header
-        className={`fixed inset-x-0 top-0 z-40 transition-colors duration-200 ${
+        className={`fixed inset-x-0 top-0 z-40 transition-colors duration-300 ${
           scrolled || isWatchRoute
-            ? 'border-b border-ink-800/80 bg-ink-950/92 backdrop-blur-md'
-            : 'bg-gradient-to-b from-black/80 to-transparent'
+            ? 'surface-glass'
+            : 'bg-gradient-to-b from-black/85 via-black/45 to-transparent'
         }`}
       >
-        <div className="flex h-14 items-center gap-2 px-3 md:h-16 md:gap-4 md:px-6">
+        <div className="mx-auto flex h-14 max-w-[1800px] items-center gap-2 px-3 md:h-16 md:gap-5 md:px-6">
           <Link
             to={ROUTES.home}
-            className="flex shrink-0 items-center gap-2 rounded px-1 py-1"
+            className="group flex shrink-0 items-center gap-2.5 rounded px-1 py-1"
             aria-label="IPTV Player — home"
           >
-            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-jade-500 text-ink-1000">
-              <Icon name="play" size={14} filled />
+            <span className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-accent-300 to-accent-500 text-ink-1000 shadow-glow transition-transform duration-300 ease-present group-hover:scale-105">
+              <Icon name="play" size={15} filled />
+              {/* Sheen sweep across the mark: the brand element is the one thing
+                  on every screen, so it gets the motion budget. */}
+              <span className="sheen absolute inset-0" aria-hidden="true" />
             </span>
-            <span className="hidden text-sm font-bold tracking-tight text-mist-50 sm:inline">
-              IPTV
+            <span className="hidden text-[15px] font-bold tracking-tight text-mist-50 sm:inline">
+              <span className="text-accent-gradient">IPTV</span>
+              <span className="ml-1.5 text-mist-400">Player</span>
             </span>
           </Link>
 
           <nav
             aria-label="Primary"
-            className="hidden min-w-0 flex-1 items-center gap-0.5 overflow-x-auto lg:flex"
+            className="hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto lg:flex"
           >
             {visibleItems.map((item) => (
               <NavLink
@@ -155,8 +159,10 @@ export const TopNav = memo(function TopNav() {
                 end={item.to === ROUTES.home}
                 data-nav
                 className={({ isActive }) =>
-                  `relative rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                    isActive ? 'text-mist-50' : 'text-mist-400 hover:text-mist-50'
+                  `group/nav relative rounded-full px-3.5 py-2 text-sm font-medium whitespace-nowrap transition-colors duration-200 ${
+                    isActive
+                      ? 'bg-accent-500/12 text-mist-50'
+                      : 'text-mist-400 hover:bg-ink-800/70 hover:text-mist-50'
                   }`
                 }
               >
@@ -164,7 +170,7 @@ export const TopNav = memo(function TopNav() {
                   <>
                     {item.label}
                     {isActive ? (
-                      <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-jade-400" />
+                      <span className="absolute inset-x-3 -bottom-px h-[2px] rounded-full bg-gradient-to-r from-accent-400 to-accent-200 shadow-[0_0_10px_rgb(var(--accent-400-rgb)/0.6)]" />
                     ) : null}
                   </>
                 )}
@@ -187,23 +193,38 @@ export const TopNav = memo(function TopNav() {
       {/* Mobile bottom tab bar. Larger tap targets, thumb-reachable. */}
       <nav
         aria-label="Primary mobile"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-800 bg-ink-950/95 backdrop-blur-md lg:hidden"
+        className="surface-glass fixed inset-x-0 bottom-0 z-40 lg:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className={mobileTabs.length === 6 ? 'grid grid-cols-6' : 'grid grid-cols-5'}>
+        <div
+          className={`mx-auto grid max-w-md ${mobileTabs.length === 6 ? 'grid-cols-6' : 'grid-cols-5'}`}
+        >
           {mobileTabs.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.to === ROUTES.home}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
-                  isActive ? 'text-jade-400' : 'text-mist-500'
+                `relative flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors ${
+                  isActive ? 'text-accent-300' : 'text-mist-500'
                 }`
               }
             >
-              <Icon name={item.icon} size={19} />
-              {item.label}
+              {({ isActive }) => (
+                <>
+                  <span
+                    className={`flex h-7 w-11 items-center justify-center rounded-full transition-colors duration-200 ${
+                      isActive ? 'bg-accent-500/15' : ''
+                    }`}
+                  >
+                    <Icon name={item.icon} size={19} filled={isActive} />
+                  </span>
+                  {item.label}
+                  {isActive ? (
+                    <span className="absolute top-0 h-0.5 w-6 rounded-full bg-accent-400" />
+                  ) : null}
+                </>
+              )}
             </NavLink>
           ))}
         </div>

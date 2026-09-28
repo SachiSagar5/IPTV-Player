@@ -31,13 +31,17 @@
   --color-mist-500: #767f96;
   --color-mist-600: #5b6377;
 
-  /* Accent — mint. Deliberately not a copy of any competitor's brand red. */
-  --color-jade-200: #9df5dc;
-  --color-jade-300: #5cebc4;
-  --color-jade-400: #2cdda9;
-  --color-jade-500: #12c08d;
-  --color-jade-600: #0b9a70;
-  --color-jade-700: #077455;
+  /* Accent — violet/indigo. Deliberately not a copy of any competitor's brand
+     red, and warm enough to read as a distinct hue rather than "blue" on the
+     near-neutral ink surfaces. `accent-400` is the app's interactive colour:
+     it clears 7:1 on `--color-ink-950`, so it is safe for text, focus rings and
+     small chips, not just fills. */
+  --color-accent-200: #ddd6fe;
+  --color-accent-300: #c4b5fd;
+  --color-accent-400: #a78bfa;
+  --color-accent-500: #8b5cf6;
+  --color-accent-600: #7c3aed;
+  --color-accent-700: #6d28d9;
 
   /* Signal colours */
   --color-live-400: #ff5a5a;
@@ -49,12 +53,54 @@
 
   --shadow-card: 0 2px 8px rgb(0 0 0 / 0.4);
   --shadow-lift: 0 12px 32px rgb(0 0 0 / 0.6);
-  --shadow-focus: 0 0 0 2px var(--color-ink-950), 0 0 0 4px var(--color-jade-400);
+  --shadow-focus: 0 0 0 2px var(--color-ink-950), 0 0 0 4px var(--color-accent-400);
+  /* Accent bloom. Used where a control is the single brightest thing on screen
+     (primary actions, the active nav pill) so the eye lands there first. */
+  --shadow-glow: 0 4px 20px -6px rgb(var(--accent-500-rgb) / 0.55);
+  --shadow-glow-lg: 0 10px 40px -10px rgb(var(--accent-500-rgb) / 0.5);
+  /* Deeper than `lift`, for surfaces that need to read as a raised plane. */
+  --shadow-panel: 0 1px 0 0 rgb(255 255 255 / 0.04) inset, 0 18px 40px -20px rgb(0 0 0 / 0.8);
+
+  /* Hairline used to separate a raised surface from the page behind it. */
+  --color-hairline: rgb(255 255 255 / 0.07);
 
   /* Easing curves, named for intent. Motion in this app is either "arriving"
      (settling), "presenting" (overshooting slightly) or "ambient" (endless). */
   --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-present: cubic-bezier(0.34, 1.24, 0.64, 1);
+}
+
+/* ------------------------------------------------------------------ *
+ * Accent channel triplets
+ *
+ * Space-separated RGB channels rather than hex, so the same colour can be
+ * re-alphaed at the point of use: `rgb(var(--accent-400-rgb) / 0.5)`. Every
+ * glow, ring and tint in this app needs the accent at a different alpha, and
+ * that is exactly what hardcoding hex per call site got wrong — the values
+ * drifted apart from the token and had to be fixed by hand.
+ *
+ * Declared outside `@theme` deliberately. A `--color-*` name here would be read
+ * by Tailwind as a colour token and generate utilities from a value that is not
+ * a colour, so these are plain custom properties instead.
+ * ------------------------------------------------------------------ */
+:root {
+  --accent-200-rgb: 221 214 254;
+  --accent-300-rgb: 196 181 253;
+  --accent-400-rgb: 167 139 250;
+  --accent-500-rgb: 139 92 246;
+  --accent-600-rgb: 124 58 237;
+  --accent-700-rgb: 109 40 217;
+
+  /* Aurora counterpoints. The page wash is a violet/magenta pair with one cool
+     pool kept back, so the backdrop has depth instead of being a single tint. */
+  --accent-secondary-rgb: 168 85 247;
+  --accent-tertiary-rgb: 103 232 249;
+
+  /* `--color-ink-950` in channel form, for the frosted chrome that has to tint
+     *translucently* with the page. `rgb(var(--color-ink-950) / 0.72)` is not
+     valid, and hardcoding the hex here meant a change to the surface ramp left
+     the glass a different colour from the page behind it. */
+  --ink-950-rgb: 8 9 12;
 }
 
 @layer base {
@@ -91,6 +137,36 @@
     overscroll-behavior-y: none;
   }
 
+  /* ------------------------------------------------------------------ *
+   * Ambient page depth
+   *
+   * A flat #08090c field reads as unfinished on a large display. Two very wide,
+   * very faint accent pools anchored to the top of the viewport give the page a
+   * sense of depth and light direction. They are painted on `body` (not as
+   * extra DOM) so they cost nothing per card, and `background-attachment:
+   * fixed` keeps them from sliding with content on platforms that support it.
+   * ------------------------------------------------------------------ */
+  body {
+    background-image:
+      radial-gradient(
+        120% 70% at 12% -10%,
+        rgb(var(--accent-500-rgb) / 0.15),
+        transparent 60%
+      ),
+      radial-gradient(
+        90% 55% at 88% -6%,
+        rgb(var(--accent-secondary-rgb) / 0.11),
+        transparent 62%
+      ),
+      radial-gradient(
+        70% 45% at 50% 0%,
+        rgb(var(--accent-tertiary-rgb) / 0.06),
+        transparent 70%
+      );
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+
   #root {
     isolation: isolate;
     min-height: 100dvh;
@@ -99,7 +175,7 @@
   /* Visible, high-contrast focus everywhere. This doubles as the TV focus ring:
      a D-pad user must always be able to see where they are. */
   :focus-visible {
-    outline: 2px solid var(--color-jade-400);
+    outline: 2px solid var(--color-accent-400);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -134,7 +210,10 @@
   }
 
   ::selection {
-    background: var(--color-jade-500);
+    /* `accent-400`, not `accent-500`: the fill carries near-black text, and
+       violet-500 only reaches ~4.5:1 against ink-1000 where the lighter step
+       clears 7:1. The darker steps are for fills, never for text on white. */
+    background: var(--color-accent-400);
     color: var(--color-ink-1000);
   }
 
@@ -184,6 +263,84 @@
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--color-mist-400);
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Surfaces
+   *
+   * Three tiers, used consistently so elevation reads the same on every page:
+   *   `.surface-panel` — a resting container (settings sections, playlist
+   *                      rows, onboarding card).
+   *   `.surface-glass`  — floating chrome over artwork (nav bar, menus). Frosts
+   *                      its own backdrop so a busy poster behind it stays
+   *                      legible.
+   *   `.surface-raise`  — transient lift on hover/focus.
+   * The 1px top highlight is what makes a dark surface look lit rather than
+   * merely darker than the page.
+   * ------------------------------------------------------------------ */
+  .surface-panel {
+    background-image: linear-gradient(180deg, rgb(255 255 255 / 0.028), transparent 55%);
+    background-color: var(--color-ink-900);
+    border: 1px solid rgb(255 255 255 / 0.07);
+    box-shadow: var(--shadow-panel);
+  }
+
+  .surface-glass {
+    background-color: rgb(var(--ink-950-rgb) / 0.72);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border-bottom: 1px solid rgb(255 255 255 / 0.06);
+    box-shadow: 0 1px 0 0 rgb(255 255 255 / 0.05) inset, 0 10px 30px -18px rgb(0 0 0 / 0.9);
+  }
+
+  /* A 1px accent-lit top edge, used to lift a header off the artwork. */
+  .edge-light {
+    position: relative;
+  }
+
+  .edge-light::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(var(--accent-400-rgb) / 0.55) 18%,
+      rgb(var(--accent-400-rgb) / 0.55) 82%,
+      transparent
+    );
+    opacity: 0.85;
+    pointer-events: none;
+  }
+
+  /* Display type for the hero and page titles: tight, optically weighted, and
+     clipped with a soft fade at the top so descenders on a tall line never
+     collide with a fixed header. */
+  .text-display {
+    letter-spacing: -0.03em;
+    line-height: 1.02;
+  }
+
+  /* Accent gradient text, used sparingly (the brand mark and the hero CTA). */
+  .text-accent-gradient {
+    background-image: linear-gradient(
+      100deg,
+      var(--color-accent-200),
+      var(--color-accent-400) 45%,
+      rgb(var(--accent-tertiary-rgb))
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    /* WebKit needs the explicit fallback or a transparent fill shows as black
+       if background-clip:text is unsupported. */
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* A short accent rule that leads a section title. */
+  .rule-accent {
+    background-image: linear-gradient(90deg, var(--color-accent-400), transparent);
   }
 
   .skeleton {
@@ -254,18 +411,23 @@
   .media-img {
     transition:
       opacity 300ms ease-out,
-      transform 650ms var(--ease-settle);
+      transform 650ms var(--ease-settle),
+      filter 400ms ease-out;
     transform-origin: center;
   }
 
   .card:hover .media-img,
   .card:focus-visible .media-img {
-    transform: scale(1.06);
+    transform: scale(1.07);
+    /* A touch of contrast on hover makes flat artwork look sharper without
+       changing its colours, which is the cheapest perceived-quality win there
+       is for a grid of posters. */
+    filter: saturate(1.06) contrast(1.03);
   }
 
   /* Accent ring + bloom that fades in over the artwork edge. */
   .card-glow {
-    box-shadow: inset 0 0 0 1px rgb(44 221 169 / 0);
+    box-shadow: inset 0 0 0 1px rgb(var(--accent-400-rgb) / 0);
     transition:
       box-shadow 240ms ease-out,
       opacity 240ms ease-out;
@@ -274,14 +436,50 @@
   .card:hover .card-glow,
   .card:focus-visible .card-glow {
     box-shadow:
-      inset 0 0 0 1px rgb(44 221 169 / 0.55),
-      0 0 22px -6px rgb(44 221 169 / 0.45);
+      inset 0 0 0 1px rgb(var(--accent-400-rgb) / 0.6),
+      0 0 26px -6px rgb(var(--accent-400-rgb) / 0.5);
+  }
+
+  /* A permanent hairline so a card at rest still has a defined edge against a
+     dark page; the hover state above thickens it into the accent ring. */
+  .card-hairline {
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+    transition: box-shadow 240ms ease-out;
+  }
+
+  .card:hover .card-hairline,
+  .card:focus-visible .card-hairline {
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
   }
 
   /* Breathing dot on the LIVE badge. Tiny, but it is the one thing on a card
      that should feel "on air". */
   .live-pulse {
     animation: pulse-soft 2s ease-in-out infinite;
+  }
+
+  /* Gradient sweep for the primary CTA: a slow specular pass that keeps the
+     most important control on screen from ever looking like flat fill. */
+  .sheen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      100deg,
+      transparent 20%,
+      rgb(255 255 255 / 0.35) 50%,
+      transparent 80%
+    );
+    transform: translateX(-120%);
+    animation: sheen 4.5s var(--ease-settle) infinite;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sheen::after {
+      animation: none;
+      display: none;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -379,6 +577,39 @@
   }
 }
 
+/* Specular pass for `.sheen`. */
+@keyframes sheen {
+  0% {
+    transform: translateX(-120%);
+  }
+  38%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+/* Slow drift for the onboarding backdrop. Two long, offset periods so the
+   pools never fall into a visible beat. */
+@keyframes drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, -6%, 0) scale(1.12);
+  }
+}
+
+@keyframes drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.05);
+  }
+  50% {
+    transform: translate3d(-6%, 5%, 0) scale(1);
+  }
+}
+
 @utility animate-spin-slow {
   animation: spin 0.9s linear infinite;
 }
@@ -405,6 +636,17 @@
   animation: ken-burns 22s ease-out both;
 }
 
+/* Slow ambient drift for decorative backdrop pools. `both` fill is wrong here:
+   the pool must be at its resting state before the first frame, so the delay
+   holds the keyframe rather than an invisible element. */
+@utility animate-drift-a {
+  animation: drift-a 24s ease-in-out infinite;
+}
+
+@utility animate-drift-b {
+  animation: drift-b 31s ease-in-out infinite;
+}
+
 /* Entrance motion is decoration, not information: a motion-sensitive user gets
    the same layouts, instantly. `animation: none` drops the `both` fill too, so
    elements land at their natural opacity instead of being stranded invisible. */
@@ -413,7 +655,9 @@
   .animate-ken-burns,
   .animate-fade-in,
   .animate-slide-up,
-  .animate-scale-in {
+  .animate-scale-in,
+  .animate-drift-a,
+  .animate-drift-b {
     animation: none;
   }
 }

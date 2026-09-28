@@ -50,7 +50,7 @@ export const Input = memo(
             id={inputId}
             aria-invalid={error ? true : undefined}
             aria-describedby={describedBy}
-            className={`h-11 w-full rounded-md border bg-ink-850 text-sm text-mist-50 transition-colors placeholder:text-mist-600 hover:border-ink-600 focus:border-jade-500 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-jade-400 ${
+            className={`h-11 w-full rounded-md border bg-ink-850 text-sm text-mist-50 transition-colors placeholder:text-mist-600 hover:border-ink-600 focus:border-accent-500 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent-400 ${
               icon ? 'pl-10' : 'pl-3.5'
             } ${trailing ? 'pr-10' : 'pr-3.5'} ${
               error ? 'border-live-500/60' : 'border-ink-700'
@@ -92,6 +92,7 @@ export const Switch = memo(function Switch({
   disabled,
 }: SwitchProps) {
   const id = useId();
+  const descriptionId = description ? `${id}-description` : undefined;
   return (
     <div className="flex items-start justify-between gap-4">
       <div className="min-w-0">
@@ -99,7 +100,9 @@ export const Switch = memo(function Switch({
           {label}
         </label>
         {description ? (
-          <p className="mt-0.5 text-xs leading-relaxed text-mist-500">{description}</p>
+          <p id={descriptionId} className="mt-0.5 text-xs leading-relaxed text-mist-500">
+            {description}
+          </p>
         ) : null}
       </div>
       <button
@@ -107,17 +110,24 @@ export const Switch = memo(function Switch({
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-describedby={descriptionId}
         disabled={disabled}
         onClick={() => onCheckedChange(!checked)}
         className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors duration-150 ${
-          checked ? 'border-jade-500 bg-jade-500' : 'border-ink-600 bg-ink-750'
+          checked
+            ? 'border-accent-400/60 bg-accent-500'
+            : 'border-ink-600 bg-ink-750 hover:border-ink-500'
         } disabled:opacity-45`}
       >
+        {/* Geometry, which is fussy enough to be worth stating: the track is 24px
+            and the knob 18px, so centring the knob is a 3px offset — `top-0.5`
+            left it 1px high. Travel is track - knob - 2 * inset = 22px from the
+            resting position; the old 1.375rem stopped 1px short of the far edge,
+            which read as a misaligned knob on every switch on the page. */}
         <span
-          className={`absolute top-0.5 h-4.5 w-4.5 rounded-full bg-white shadow transition-transform duration-150 ${
-            checked ? 'translate-x-[1.375rem]' : 'translate-x-0.5'
+          className={`pointer-events-none absolute top-[0.1875rem] h-[1.125rem] w-[1.125rem] rounded-full bg-white shadow-sm transition-transform duration-150 ${
+            checked ? 'translate-x-[1.5rem]' : 'translate-x-0.5'
           }`}
-          style={{ height: '1.125rem', width: '1.125rem' }}
         />
       </button>
     </div>
@@ -154,7 +164,10 @@ export function SegmentedControl<T extends string | number>({
     <div
       role="tablist"
       aria-label={ariaLabel}
-      className={`inline-flex gap-1 rounded-lg border border-ink-700 bg-ink-900 p-1 ${className}`}
+      // `p-0.5` + a 22px button + the border lands the whole control at 28px,
+      // against a 24px switch in the same settings column. At `p-1`/`h-7` it was
+      // 38px and visibly overhung the switches it sits beside.
+      className={`inline-flex gap-1 rounded-lg border border-ink-700 bg-ink-900 p-0.5 ${className}`}
     >
       {options.map((option) => {
         const selected = option.value === value;
@@ -166,7 +179,7 @@ export function SegmentedControl<T extends string | number>({
             aria-selected={selected}
             onClick={() => onChange(option.value)}
             className={`inline-flex items-center gap-1.5 rounded-md font-medium whitespace-nowrap transition-colors ${
-              size === 'sm' ? 'h-7 px-2.5 text-xs' : 'h-8 px-3 text-sm'
+              size === 'sm' ? 'h-[1.375rem] px-2.5 text-xs' : 'h-8 px-3 text-sm'
             } ${
               selected
                 ? 'bg-ink-700 text-mist-50 shadow-[0_1px_0_rgba(255,255,255,0.06)_inset]'
@@ -209,7 +222,7 @@ export const FilterChip = memo(function FilterChip({
       onClick={onClick}
       className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-xs font-medium whitespace-nowrap transition-colors duration-150 ${
         active
-          ? 'border-jade-500 bg-jade-500 text-ink-1000'
+          ? 'border-accent-500 bg-accent-500 text-ink-1000'
           : 'border-ink-600 bg-ink-850 text-mist-200 hover:border-ink-500 hover:bg-ink-800'
       }`}
     >

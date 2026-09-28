@@ -125,31 +125,39 @@ export function RowShell<T extends RowItem>({
       <div className="mb-4 flex items-end justify-between gap-4 px-4 md:px-8">
         <h2
           id={`row-${title}`}
-          className="truncate text-[15px] font-semibold tracking-tight text-mist-50 md:text-base"
+          className="flex min-w-0 items-center gap-3 text-[15px] font-semibold tracking-tight text-mist-50 md:text-lg"
         >
+          {/* Short accent rule: gives each row a consistent left anchor so the
+              page reads as a stack of sections rather than a list of strings. */}
+          <span
+            aria-hidden="true"
+            className="rule-accent h-4 w-1 shrink-0 rounded-full transition-[height] duration-300 group-hover/row:h-5"
+          />
           {href ? (
             <Link
               to={href}
-              className="inline-flex items-center gap-1.5 rounded transition-colors hover:text-jade-300"
+              className="inline-flex min-w-0 items-center gap-1.5 rounded transition-colors hover:text-accent-300"
             >
-              {title}
+              <span className="truncate">{title}</span>
               <Icon
                 name="chevron-right"
                 size={16}
-                className="opacity-0 transition-opacity group-hover/row:opacity-70"
+                className="shrink-0 opacity-0 transition-opacity group-hover/row:opacity-70"
               />
             </Link>
           ) : (
-            title
+            <span className="truncate">{title}</span>
           )}
         </h2>
         {href ? (
           <Link
             to={href}
-            className="hidden shrink-0 items-center gap-1 text-xs font-medium text-mist-500 transition-colors hover:text-jade-300 sm:inline-flex"
+            className="group/all hidden shrink-0 items-center gap-1 rounded-full border border-ink-700 bg-ink-900/70 py-1 pr-1.5 pl-3 text-xs font-medium text-mist-400 backdrop-blur-sm transition-colors hover:border-accent-600/60 hover:text-accent-300 sm:inline-flex"
           >
             Explore all
-            <Icon name="chevron-right" size={13} />
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-ink-750 transition-colors group-hover/all:bg-accent-500/20">
+              <Icon name="chevron-right" size={12} />
+            </span>
           </Link>
         ) : null}
       </div>
@@ -168,6 +176,23 @@ export function RowShell<T extends RowItem>({
             : null}
         </div>
 
+        {/* Soft masks so a row bleeds off the gutter instead of ending on a
+            hard vertical edge. Applied to an overlay rather than the scroller
+            itself, because masking the scrolling element also fades the cards
+            while they are moving, which looks like a rendering fault. */}
+        {!atStart ? (
+          <div
+            aria-hidden="true"
+            className="edge-fade-left pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-l from-ink-950 to-transparent md:w-16"
+          />
+        ) : null}
+        {!atEnd ? (
+          <div
+            aria-hidden="true"
+            className="edge-fade-right pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-r from-ink-950 to-transparent md:w-16"
+          />
+        ) : null}
+
         {showArrows ? (
           <>
             {!atStart ? (
@@ -176,9 +201,9 @@ export function RowShell<T extends RowItem>({
                 data-nav={false}
                 onClick={() => page(-1)}
                 aria-label={`Scroll ${title} left`}
-                className="absolute top-1/2 -left-1 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-ink-600 bg-ink-900/90 text-mist-200 shadow-lift backdrop-blur transition-[color,background-color,transform] duration-200 hover:scale-105 hover:bg-ink-800 active:scale-95 md:flex"
+                className="absolute top-1/2 -left-1 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-ink-900/85 text-mist-100 shadow-lift backdrop-blur-md transition-[color,background-color,transform] duration-200 hover:scale-105 hover:border-accent-500/50 hover:bg-ink-800 hover:text-accent-300 active:scale-95 md:flex"
               >
-                <Icon name="chevron-left" size={20} />
+                <Icon name="chevron-left" size={22} />
               </button>
             ) : null}
             {!atEnd ? (
@@ -187,9 +212,9 @@ export function RowShell<T extends RowItem>({
                 data-nav={false}
                 onClick={() => page(1)}
                 aria-label={`Scroll ${title} right`}
-                className="absolute top-1/2 -right-1 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-ink-600 bg-ink-900/90 text-mist-200 shadow-lift backdrop-blur transition-[color,background-color,transform] duration-200 hover:scale-105 hover:bg-ink-800 active:scale-95 md:flex"
+                className="absolute top-1/2 -right-1 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-ink-900/85 text-mist-100 shadow-lift backdrop-blur-md transition-[color,background-color,transform] duration-200 hover:scale-105 hover:border-accent-500/50 hover:bg-ink-800 hover:text-accent-300 active:scale-95 md:flex"
               >
-                <Icon name="chevron-right" size={20} />
+                <Icon name="chevron-right" size={22} />
               </button>
             ) : null}
           </>

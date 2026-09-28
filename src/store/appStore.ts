@@ -36,8 +36,10 @@ import {
   saveSettings,
 } from '@/services/storage/prefs';
 import { playlistsRepo } from '@/services/storage/playlistRepo';
-import { favoritesRepo, progressRepo, recentRepo } from '@/services/storage/userDataRepo';
-import type { FavoriteRecord, RecentRecord } from '@/services/storage/userDataRepo';
+import { favoritesRepo, liveHealthRepo, progressRepo, recentRepo } from '@/services/storage/userDataRepo';
+import type { FavoriteRecord, LiveHealthRecord, RecentRecord } from '@/services/storage/userDataRepo';
+import { isHiddenChannel } from '@/services/storage/userDataRepo';
+import type { PlayerErrorInfo } from './playerStore';
 import { describeError } from '@/services/m3u/fetcher';
 import { isAdultItem, pickParentPlaylistId } from '@/services/m3u/adult';
 import { loadPlaylistFromUrl } from '@/services/m3u/playlistService';
@@ -82,6 +84,16 @@ export interface AppState {
   progressById: Map<string, PlaybackProgress>;
   recents: RecentRecord[];
 
+  /**
+   * Live channels that failed to play, keyed by content id.
+   *
+   * Lives here rather than in `playerStore` because the consequence is a browse
+   * decision, not a playback one: the Live TV surfaces read this to withhold
+   * broken channels, and re-rendering them on the player's 4/s tick is exactly
+   * what the split store exists to prevent.
+   */
+  liveFailures: ReadonlyMap<string, LiveHealthRecord>;
+
   settings: AppSettings;
   onboardingDone: boolean;
 
@@ -108,6 +120,7 @@ const initialState: AppState = {
   favoriteIds: new Set(),
   progressById: new Map(),
   recents: [],
+  liveFailures: new Map(),
   settings: DEFAULT_SETTINGS,
   onboardingDone: false,
   error: null,
@@ -266,11 +279,14 @@ export function getFacets(kind?: ContentItem['kind']): FilterFacets {
 
 export async function hydrate(): Promise<void> {
   try {
-    const [playlists, favorites, progress, recents] = await Promise.all([
+    const [playlists, favorites, progress, recents, liveFailures] = await Promise.all([
       playlistsRepo.list(),
       favoritesRepo.list(),
       progressRepo.list(),
       recentRepo.list(),
+      // Absorbs the failure, so a stream-health problem can never keep the whole
+      // app from booting — worst case the channels are simply all visible again.
+      liveHealthRepo.list().catch((): LiveHealthRecord[] => []),
     ]);
 
     const favoriteIds = new Set(favorites.map((f) => f.contentId));
@@ -296,6 +312,7 @@ export async function hydrate(): Promise<void> {
       recents,
       activePlaylistId,
       parentPlaylistId,
+      liveFailures: new Map(liveFailures.map((row) => [row.contentId, row])),
     });
 
     if (parentPlaylistId) {
@@ -694,6 +711,119 @@ export function markWatched(item: ContentItem, label: string): void {
       ...state.recents.filter((r) => r.contentId !== item.id),
     ].slice(0, 60),
   }));
+}
+
+/* ------------------------------------------------------------------ *
+ * Live channel health
+ *
+ * A live channel that cannot play is worse than a missing one: the user spends
+ * the click, the spinner and the error screen to learn nothing. So a channel
+ * that fails is remembered and withheld from the Live TV surfaces.
+ *
+ * Two rules keep this from becoming a way to lose channels:
+ *  - One failure is not a verdict. A transient network blip must not cost
+ *    someone their news channel, so hiding needs a second failure — or a single
+ *    failure the engine itself called unrecoverable.
+ *  - Evidence expires, and can be cleared by hand. A provider outage must not
+ *    permanently shrink someone's channel list, and hiding is never the only
+ *    word: the Live TV page always offers to show them back.
+ * ------------------------------------------------------------------ */
+
+/**
+ * Cached for one minute rather than forever.
+ *
+ * Expiry is time-based, so keying the cache purely on the map identity would
+ * serve a stale answer for the rest of a long session; recomputing it on every
+ * render would walk every recorded failure per card. A minute of staleness on
+ * a 24-hour TTL is invisible.
+ */
+let hiddenCache: {
+  source: ReadonlyMap<string, LiveHealthRecord>;
+  bucket: number;
+  value: ReadonlySet<string>;
+} | null = null;
+
+export function getHiddenChannelIds(): ReadonlySet<string> {
+  const failures = appStore.getState().liveFailures;
+  const bucket = Math.floor(Date.now() / 60_000);
+  if (hiddenCache && hiddenCache.source === failures && hiddenCache.bucket === bucket) {
+    return hiddenCache.value;
+  }
+  const now = Date.now();
+  const value = new Set<string>();
+  for (const [contentId, record] of failures) {
+    if (isHiddenChannel(record, now)) value.add(contentId);
+  }
+  hiddenCache = { source: failures, bucket, value };
+  return value;
+}
+
+/**
+ * How many channels are being withheld from a playlist, for the notice that
+ * explains the hiding. Not memoised: it walks only the recorded failures (a
+ * handful, not a playlist) and the page calling it already walks the set.
+ */
+export function countHiddenChannels(playlistId: string | null): number {
+  if (playlistId === null) return 0;
+  const now = Date.now();
+  let count = 0;
+  for (const record of appStore.getState().liveFailures.values()) {
+    if (record.playlistId === playlistId && isHiddenChannel(record, now)) count += 1;
+  }
+  return count;
+}
+
+/**
+ * Record a failed stream and hide the channel if the evidence is conclusive.
+ *
+ * VOD is deliberately ignored: a film that fails to load is a different problem
+ * (a bad file on a good connection) and hiding it would throw away the user's
+ * library over a transient fault.
+ */
+export function noteStreamFailure(item: ContentItem, error: PlayerErrorInfo): void {
+  if (item.kind !== 'live') return;
+  void liveHealthRepo.recordFailure(item, error).then(
+    (record) => {
+      appStore.patch((state) => {
+        const next = new Map(state.liveFailures);
+        next.set(item.id, record);
+        return { liveFailures: next };
+      });
+    },
+    () => {
+      /* Health tracking is best-effort; a failed write just means no hiding. */
+    },
+  );
+}
+
+/** A channel that starts playing is not a problem, whatever it did last time. */
+export function clearStreamFailure(contentId: string): void {
+  if (!appStore.getState().liveFailures.has(contentId)) return;
+  appStore.patch((state) => {
+    const next = new Map(state.liveFailures);
+    next.delete(contentId);
+    return { liveFailures: next };
+  });
+  void liveHealthRepo.clear(contentId);
+}
+
+/**
+ * Forget every recorded failure for a playlist — the "show hidden channels"
+ * action on the Live TV page.
+ *
+ * Records, not just the hidden ones: a channel that failed once is still on
+ * probation, and un-hiding everything should give those a clean slate too.
+ */
+export function restoreHiddenChannels(playlistId: string | null): void {
+  if (playlistId === null) return;
+  appStore.patch((state) => {
+    const next = new Map<string, LiveHealthRecord>();
+    for (const [contentId, record] of state.liveFailures) {
+      if (record.playlistId !== playlistId) next.set(contentId, record);
+    }
+    return { liveFailures: next };
+  });
+  void liveHealthRepo.clearForPlaylist(playlistId);
 }
 
 /* ------------------------------------------------------------------ *

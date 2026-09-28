@@ -22,6 +22,7 @@ import { EmptyState } from '@/components/common/States';
 import { ButtonLink } from '@/components/common/Button';
 import { useDpadNavigation } from '@/hooks/useDpadNavigation';
 import {
+  getHiddenChannelIds,
   getItemBuckets,
   toggleFavorite,
   useAppSelector,
@@ -58,6 +59,7 @@ export default function HomePage() {
   const favoriteIds = useAppSelector((s) => s.favoriteIds);
   const recents = useAppSelector((s) => s.recents);
   const seriesIndex = useAppSelector((s) => s.seriesIndex);
+  const liveFailures = useAppSelector((s) => s.liveFailures);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useDpadNavigation(rootRef, { loop: false });
@@ -69,6 +71,15 @@ export default function HomePage() {
 
   // Buckets are memoised on the `items` identity, so this is free on re-render.
   const buckets = useMemo(() => getItemBuckets(), [items]);
+
+  // Channels known to be dead. The live row is a fixed slice of the bucket, so
+  // without this the first few slots — and the hero, which prefers a live
+  // channel — stay occupied by channels that cannot play.
+  const hiddenIds = useMemo(() => getHiddenChannelIds(), [liveFailures]);
+  const live = useMemo(
+    () => (hiddenIds.size === 0 ? buckets.live : buckets.live.filter((i) => !hiddenIds.has(i.id))),
+    [buckets.live, hiddenIds],
+  );
 
   const continueWatching = useMemo(() => {
     const resume: ContentItem[] = [];
@@ -124,11 +135,16 @@ export default function HomePage() {
   // then the most recent live channel, then the first movie.
   const hero = useMemo(() => {
     if (continueWatching[0]) return { item: continueWatching[0], resume: true };
-    if (buckets.live[0]) return { item: buckets.live[0], resume: false };
+    if (live[0]) return { item: live[0], resume: false };
     if (buckets.movie[0]) return { item: buckets.movie[0], resume: false };
-    if (items[0]) return { item: items[0], resume: false };
+    // Last resort, and the one case where a hidden channel can still be reached:
+    // a playlist of nothing but live entries, all of them dead. Scans for the
+    // first entry that is actually playable and stops there.
+    for (let i = 0; i < items.length; i++) {
+      if (!hiddenIds.has(items[i].id)) return { item: items[i], resume: false };
+    }
     return null;
-  }, [continueWatching, buckets, items]);
+  }, [continueWatching, live, buckets, items, hiddenIds]);
 
   if (items.length === 0) {
     return (
@@ -228,11 +244,11 @@ export default function HomePage() {
         />
       ) : null}
 
-      {buckets.live.length > 0 ? (
+      {live.length > 0 ? (
         <ContentRow
           title="Live channels"
           staggerIndex={ENTRY.live}
-          items={buckets.live.slice(0, ROW_LIMIT)}
+          items={live.slice(0, ROW_LIMIT)}
           variant="channel"
           href={ROUTES.live}
           progressById={progressById}

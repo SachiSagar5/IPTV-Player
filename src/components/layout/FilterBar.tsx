@@ -128,7 +128,7 @@ export const FilterBar = memo(function FilterBar({
               onClick={() => onChange('favoriteOnly', !filters.favoriteOnly)}
               className={`inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-colors ${
                 filters.favoriteOnly
-                  ? 'border-jade-500 bg-jade-500 text-ink-1000'
+                  ? 'border-accent-500 bg-accent-500 text-ink-1000'
                   : 'border-ink-600 bg-ink-850 text-mist-300 hover:border-ink-500'
               }`}
             >

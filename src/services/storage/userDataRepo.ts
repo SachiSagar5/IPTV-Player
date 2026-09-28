@@ -1,11 +1,13 @@
 /**
- * User-data repository: favourites ("My List"), playback progress and recents.
+ * User-data repository: favourites ("My List"), playback progress, recents and
+ * live-channel playback health.
  *
- * All three are keyed by the stable `contentId`, so refreshing a playlist keeps
+ * All four are keyed by the stable `contentId`, so refreshing a playlist keeps
  * the user's data intact. Progress is written throttled by the player
  * (every ~5s and on pause/unload) rather than on every `timeupdate`.
  */
 import type { ContentItem, PlaybackProgress } from '@/types';
+import type { PlayerErrorInfo } from '@/store/playerStore';
 import { STORE, del, get, getAll, getAllByIndex, put } from './db';
 
 export interface FavoriteRecord {
@@ -37,6 +39,142 @@ export interface RecentRecord {
 }
 
 const MAX_RECENT = 60;
+
+/**
+ * A live channel that failed to play.
+ *
+ * Rows are *evidence*, not a verdict: the browse surfaces decide what to hide,
+ * and only after a channel has failed more than once (see `isHiddenChannel`).
+ * Keeping the raw record rather than a boolean is what makes "show hidden
+ * channels" possible without re-probing anything.
+ */
+export interface LiveHealthRecord {
+  contentId: string;
+  playlistId: string;
+  name: string;
+  logo: string;
+  group: string;
+  /** Fatal errors seen against this channel, across sessions. */
+  attempts: number;
+  /**
+   * Set when the engine declared the failure unrecoverable — an unsupported
+   * container or a manifest that is not HLS. That is a property of the stream
+   * itself rather than of the moment it was tried, so it hides the channel
+   * immediately instead of waiting for a second confirmation.
+   */
+  unrecoverable: boolean;
+  detail: string;
+  /** Epoch ms of the most recent failure. */
+  at: number;
+}
+
+/**
+ * How long a failure record stays relevant.
+ *
+ * Long enough that a provider outage does not permanently amputate a chunk of
+ * someone's channel list, short enough that a provider that comes back does not
+ * stay hidden for days. The escape hatch is deliberately not TTL-based: a user
+ * who knows a channel works can unhide the lot on request.
+ */
+export const LIVE_HEALTH_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** Failures needed before a channel is hidden. One fluke is not a verdict. */
+const ATTEMPTS_BEFORE_HIDDEN = 2;
+
+/**
+ * Whether a recorded failure is enough to hide the channel.
+ *
+ * `unrecoverable` short-circuits this: the engine has already tried and failed
+ * the recovery ladder, and a format the browser cannot decode will not start
+ * decoding on the next attempt.
+ */
+export function isHiddenChannel(record: LiveHealthRecord, now = Date.now()): boolean {
+  if (now - record.at > LIVE_HEALTH_TTL_MS) return false;
+  return record.unrecoverable || record.attempts >= ATTEMPTS_BEFORE_HIDDEN;
+}
+
+export const liveHealthRepo = {
+  /** Every record still inside its TTL, newest first. Expired rows are pruned. */
+  async list(now = Date.now()): Promise<LiveHealthRecord[]> {
+    const rows = await getAll<LiveHealthRecord>(STORE.liveHealth);
+    const live = rows.filter((row) => now - row.at <= LIVE_HEALTH_TTL_MS);
+    const expired = rows.length - live.length;
+    if (expired > 0) {
+      // Opportunistic: a rewrite is only paid for when something actually aged
+      // out, and it keeps the table from growing for playlists long since gone.
+      await liveHealthRepo.removeMany(
+        rows.filter((row) => now - row.at > LIVE_HEALTH_TTL_MS).map((row) => row.contentId),
+      );
+    }
+    return live.sort((a, b) => b.at - a.at);
+  },
+
+  async listForPlaylist(playlistId: string): Promise<LiveHealthRecord[]> {
+    const rows = await getAllByIndex<LiveHealthRecord>(
+      STORE.liveHealth,
+      'playlistId',
+      IDBKeyRange.only(playlistId),
+    );
+    const now = Date.now();
+    return rows.filter((row) => now - row.at <= LIVE_HEALTH_TTL_MS).sort((a, b) => b.at - a.at);
+  },
+
+  /**
+   * Merge a new failure into any existing record.
+   *
+   * Read-then-write rather than a blind put, because `attempts` is cumulative
+   * and a concurrent write would otherwise reset the count to 1 and keep a
+   * permanently broken channel visible forever.
+   */
+  async recordFailure(
+    item: ContentItem,
+    error: PlayerErrorInfo,
+    now = Date.now(),
+  ): Promise<LiveHealthRecord> {
+    const previous = await get<LiveHealthRecord>(STORE.liveHealth, item.id);
+    // Attempts older than the TTL are treated as a fresh start: a channel that
+    // broke last week and broke again now is not "the same" evidence twice.
+    const withinTtl = previous !== undefined && now - previous.at <= LIVE_HEALTH_TTL_MS;
+    const record: LiveHealthRecord = {
+      contentId: item.id,
+      playlistId: item.playlistId,
+      name: item.name,
+      logo: item.logo,
+      group: item.group,
+      attempts: (withinTtl ? previous.attempts : 0) + 1,
+      unrecoverable: (withinTtl ? previous.unrecoverable : false) || !error.recoverable,
+      detail: error.detail ?? error.message,
+      at: now,
+    };
+    await put(STORE.liveHealth, record);
+    return record;
+  },
+
+  /** A channel that plays is not a problem, whatever it did last time. */
+  async clear(contentId: string): Promise<void> {
+    await del(STORE.liveHealth, contentId);
+  },
+
+  async removeMany(contentIds: string[]): Promise<void> {
+    if (contentIds.length === 0) return;
+    const { openDb, txDone } = await import('./db');
+    const db = await openDb();
+    const tx = db.transaction(STORE.liveHealth, 'readwrite');
+    const store = tx.objectStore(STORE.liveHealth);
+    for (const id of contentIds) store.delete(id);
+    await txDone(tx);
+  },
+
+  /** Used by the Live TV "show hidden channels" action, and on refresh. */
+  async clearForPlaylist(playlistId: string): Promise<void> {
+    const rows = await getAllByIndex<LiveHealthRecord>(
+      STORE.liveHealth,
+      'playlistId',
+      IDBKeyRange.only(playlistId),
+    );
+    await liveHealthRepo.removeMany(rows.map((row) => row.contentId));
+  },
+};
 
 export const favoritesRepo = {
   async list(): Promise<FavoriteRecord[]> {
@@ -187,9 +325,11 @@ export const recentRepo = {
 };
 
 export async function wipeUserData(): Promise<void> {
+  const [progress, health] = await Promise.all([progressRepo.list(), liveHealthRepo.list()]);
   await Promise.all([
-    progressRepo.removeMany((await progressRepo.list()).map((p) => p.contentId)),
+    progressRepo.removeMany(progress.map((p) => p.contentId)),
     recentRepo.clear(),
+    liveHealthRepo.removeMany(health.map((h) => h.contentId)),
   ]);
   const { clearStore } = await import('./db');
   await clearStore(STORE.favorites);

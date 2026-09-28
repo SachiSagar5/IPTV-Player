@@ -43,21 +43,30 @@ export const ErrorState = memo(function ErrorState({
     <div
       role="alert"
       className={`flex flex-col items-center justify-center text-center ${
-        compact ? 'gap-3 py-8 px-4' : 'gap-4 py-14 px-6'
+        compact ? 'gap-3 py-8 px-4' : 'gap-5 py-16 px-6'
       } ${className}`}
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-live-500/12 text-live-400">
-        <Icon name={icon} size={24} />
+      {/* A soft tinted pool behind the glyph: an empty or error state is a
+          dead end on screen, and a lit mark reads as "something is here"
+          rather than a bare icon floating in a void. */}
+      <div className="relative flex h-14 w-14 items-center justify-center">
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 rounded-full bg-live-500/20 blur-2xl"
+        />
+        <span className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-live-500/25 bg-live-500/10 text-live-400">
+          <Icon name={icon} size={26} />
+        </span>
       </div>
-      <div className="max-w-md space-y-1.5">
-        <h2 className="text-base font-semibold text-mist-50">{title}</h2>
+      <div className="max-w-md space-y-2">
+        <h2 className="text-lg font-semibold tracking-tight text-mist-50">{title}</h2>
         <p className="text-sm leading-relaxed text-mist-400">{message}</p>
         {detail ? (
           <details className="pt-1 text-left">
             <summary className="cursor-pointer text-xs text-mist-500 select-none hover:text-mist-400">
               Technical details
             </summary>
-            <pre className="mt-1.5 overflow-x-auto rounded border border-ink-700 bg-ink-900 p-2 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-mist-500">
+            <pre className="mt-1.5 overflow-x-auto rounded-lg border border-ink-700 bg-ink-900 p-2.5 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-mist-500">
               {detail}
             </pre>
           </details>
@@ -106,15 +115,20 @@ export const EmptyState = memo(function EmptyState({
   return (
     <div
       className={`flex flex-col items-center justify-center text-center ${
-        compact ? 'gap-3 py-8 px-4' : 'gap-4 py-16 px-6'
+        compact ? 'gap-3 py-8 px-4' : 'gap-5 py-16 px-6'
       } ${className}`}
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-ink-800 text-mist-500">
-        <Icon name={icon} size={24} />
+      <div className="relative flex h-14 w-14 items-center justify-center">
+        <span aria-hidden="true" className="absolute inset-0 rounded-full bg-accent-500/15 blur-2xl" />
+        <span className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/8 bg-ink-850 text-mist-300 shadow-panel">
+          <Icon name={icon} size={26} />
+        </span>
       </div>
-      <div className="max-w-md space-y-1.5">
-        <h2 className="text-base font-semibold text-mist-50">{title}</h2>
-        {message ? <p className="text-sm leading-relaxed text-mist-400">{message}</p> : null}
+      <div className="max-w-md space-y-2">
+        <h2 className="text-lg font-semibold tracking-tight text-mist-50">{title}</h2>
+        {message ? (
+          <p className="text-sm leading-relaxed text-mist-400">{message}</p>
+        ) : null}
       </div>
       {action ? <div className="pt-1">{action}</div> : null}
     </div>
@@ -174,7 +188,7 @@ export const InlineBanner = memo(function InlineBanner({
   const tones = {
     error: 'border-live-500/35 bg-live-500/10 text-mist-200',
     info: 'border-ink-600 bg-ink-800 text-mist-200',
-    success: 'border-jade-600/40 bg-jade-600/10 text-mist-200',
+    success: 'border-accent-600/40 bg-accent-600/10 text-mist-200',
   } as const;
 
   return (
@@ -185,7 +199,7 @@ export const InlineBanner = memo(function InlineBanner({
       <Icon
         name={tone === 'error' ? 'alert' : tone === 'success' ? 'check' : 'info'}
         size={18}
-        className={tone === 'error' ? 'text-live-400' : 'text-jade-400'}
+        className={tone === 'error' ? 'text-live-400' : 'text-accent-400'}
       />
       <span className="min-w-0 flex-1">{message}</span>
       {action}
