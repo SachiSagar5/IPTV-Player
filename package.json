@@ -1,0 +1,32 @@
+{
+  "name": "iptvplayer",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "High-performance IPTV playlist manager and HLS streaming client for web, built TV-ready.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit false --emitDeclarationOnly false",
+    "lint": "tsc -b"
+  },
+  "dependencies": {
+    "@tanstack/react-virtual": "^3.13.12",
+    "hls.js": "^1.6.13",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.9.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.13",
+    "@types/node": "^24.5.2",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.2",
+    "tailwindcss": "^4.1.13",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.5",
+    "vite-plugin-pwa": "^1.0.3"
+  }
+}
