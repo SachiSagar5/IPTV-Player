@@ -261,9 +261,15 @@ export const VideoPlayer = memo(function VideoPlayer({
     };
     const onMediaError = (): void => {
       const code = media.error?.code;
+      // MEDIA_ERR_SRC_NOT_SUPPORTED is not only about codecs. The same code is
+      // reported when the element refuses the request outright — a blocked
+      // mixed-content fetch from an https page, or a provider that will not serve
+      // the file cross-origin. Blaming the codec alone sent users hunting for an
+      // HEVC problem that was never there, so both causes are named and the
+      // more common one leads.
       const message =
         code === 4 /* MEDIA_ERR_SRC_NOT_SUPPORTED */
-          ? 'The file loaded, but this browser cannot decode it. Direct MP4s from IPTV providers are often HEVC (H.265) or E-AC3 audio, which Chrome and Safari do not support — VLC does.'
+          ? 'The browser refused this stream. Usually the provider blocks cross-origin requests or serves it over plain http from an https page; less often the file uses HEVC (H.265) or E-AC3 audio, which browsers do not decode but VLC does.'
           : code === 2 /* MEDIA_ERR_NETWORK */
             ? 'The connection dropped while playing. Check your network and try again.'
             : 'Playback failed. The stream may be offline or temporarily unavailable.';
@@ -474,7 +480,20 @@ export const VideoPlayer = memo(function VideoPlayer({
           // behaviour identical on desktop, mobile and a future TV shell.
           controls={false}
           preload="metadata"
-          crossOrigin="anonymous"
+          // Deliberately NOT `crossOrigin="anonymous"`.
+          //
+          // That attribute makes the media load CORS-checked, so the browser
+          // rejects the response unless the *final* response carries
+          // `Access-Control-Allow-Origin`. It fails with
+          // MEDIA_ERR_SRC_NOT_SUPPORTED, which is indistinguishable from an
+          // undecodable codec and produced exactly that false diagnosis for
+          // providers that redirect to a CDN host without CORS headers — a file
+          // that plays fine when opened directly.
+          //
+          // Nothing here needs a CORS-clean element: hls.js fetches over XHR
+          // (always CORS-checked, independent of this attribute), subtitles are
+          // rendered by hls.js rather than read from a <track> file, and nothing
+          // reads pixels off a canvas.
           tabIndex={-1}
           aria-label={item.name}
         />
