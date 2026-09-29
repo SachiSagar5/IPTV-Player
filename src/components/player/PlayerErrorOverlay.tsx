@@ -24,6 +24,8 @@ export const PlayerErrorOverlay = memo(function PlayerErrorOverlay({
   onBack,
   engineName,
 }: PlayerErrorOverlayProps) {
+  const isContainerError = error.message.includes('Matroska') || error.message.includes('container') || error.message.includes('E-AC3') || error.message.includes('HEVC');
+
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/85 backdrop-blur-lg p-6">
       <div className="animate-scale-in w-full max-w-md text-center">
@@ -32,6 +34,16 @@ export const PlayerErrorOverlay = memo(function PlayerErrorOverlay({
         </div>
         <h2 className="mt-5 text-lg font-bold text-white">Playback stopped</h2>
         <p className="mt-3 text-sm leading-relaxed text-white/80">{error.message}</p>
+
+        {isContainerError ? (
+          <div className="mt-6 p-4 rounded-xl bg-accent-500/10 border border-accent-500/20 text-left">
+            <p className="text-sm font-medium text-accent-300 mb-2">This stream uses a format browsers can't play</p>
+            <p className="text-[12px] text-white/70 leading-relaxed">
+              MKV containers and E-AC3 audio are not supported in web browsers. 
+              The <strong>native Android TV app</strong> (ExoPlayer) plays these streams correctly.
+            </p>
+          </div>
+        ) : null}
 
         <div className="mt-8 flex items-center justify-center gap-3">
           <Button onClick={onBack} variant="secondary" size="lg">

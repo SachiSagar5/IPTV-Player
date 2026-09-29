@@ -1,9 +1,13 @@
 /**
  * The video player.
  *
- * Architecture: this component owns a single `<video>` element and communicates
- * upward exclusively through local state. The player can be swapped for a native
- * Android/Media3 implementation later without touching a single page.
+ * Architecture: this component owns a single `<video>` element and an HlsEngine.
+ * The engine selects the right playback path:
+ *   - HLS via hls.js (with ABR) on Chrome/Firefox/Edge
+ *   - Native HLS on Safari/iOS
+ *   - Native <video> for progressive formats (MP4, WebM, etc.)
+ * Communicates upward through local state. Can be swapped for a native
+ * Android/Media3 implementation later without touching pages.
  */
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +15,7 @@ import type { ReactNode } from 'react';
 import type { ContentItem } from '@/types';
 import { playerStore } from '@/store/playerStore';
 import type { PlayerErrorInfo } from '@/store/playerStore';
+import { HlsEngine } from '@/services/hls/hlsEngine';
 import { PlayerControls } from './PlayerControls';
 import { PlayerErrorOverlay } from './PlayerErrorOverlay';
 import { PlayerLoadingOverlay } from './PlayerLoadingOverlay';
@@ -62,6 +67,7 @@ export const VideoPlayer = memo(function VideoPlayer({
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLDivElement>(null);
   const mediaRef = useRef<HTMLVideoElement>(null);
+  const engineRef = useRef<HlsEngine | null>(null);
   const navigate = useNavigate();
   const settings = useAppSelector((s) => s.settings);
   const [error, setError] = useState<PlayerErrorInfo | null>(null);
@@ -73,6 +79,10 @@ export const VideoPlayer = memo(function VideoPlayer({
   const [muted, setMutedState] = useState(settings.defaultVolume === 0);
   const [playbackRate, setPlaybackRateState] = useState(settings.defaultPlaybackRate);
   const [controlsVisible, setControlsVisible] = useState(true);
+  const [engineName, setEngineName] = useState<'hls.js' | 'native' | 'progressive' | 'none'>('none');
+  const [levels, setLevels] = useState<Array<{ index: number; label: string; height: number; bitrate: number }>>([]);
+  const [currentLevel, setCurrentLevel] = useState(-1);
+  const [autoLevelEnabled, setAutoLevelEnabled] = useState(true);
   const playableUrl = getPlayableUrl(item.streams[0]?.url ?? '');
   const resumeRef = useRef(startPosition);
 
@@ -124,14 +134,18 @@ export const VideoPlayer = memo(function VideoPlayer({
     media.playbackRate = rate;
   }, []);
 
+  const setLevel = useCallback((index: number) => {
+    engineRef.current?.setLevel(index);
+    setCurrentLevel(index);
+    setAutoLevelEnabled(index < 0);
+  }, []);
+
   const retry = useCallback(() => {
     const media = mediaRef.current;
     if (!media || !playableUrl) return;
     setError(null);
     setStatus('loading');
-    media.src = playableUrl;
-    media.load();
-    void media.play().catch(() => undefined);
+    engineRef.current?.retry();
   }, [playableUrl]);
 
   const exit = useCallback(() => {
@@ -157,24 +171,60 @@ export const VideoPlayer = memo(function VideoPlayer({
     setControlsVisible,
   });
 
+  // Initialize HlsEngine
+  useEffect(() => {
+    const media = mediaRef.current;
+    if (!media) return;
+
+    const engine = new HlsEngine({
+      onLevels: (ls) => {
+        setLevels(ls);
+        setAutoLevelEnabled(ls.length > 1);
+      },
+      onLevelChange: (index) => {
+        setCurrentLevel(index);
+      },
+      onAudioTracks: () => {},
+      onAudioTrackChange: () => {},
+      onSubtitleTracks: () => {},
+      onFatalError: (err) => {
+        setError(err);
+        setStatus('error');
+        noteStreamFailure(item, err);
+      },
+      onRecovered: () => {
+        setError(null);
+        setStatus('playing');
+      },
+    });
+
+    engine.attach(media);
+    engineRef.current = engine;
+    setEngineName(engine.engineName);
+
+    const source = { url: playableUrl };
+    engine.load(source, {
+      defaultLevel: settings.defaultQuality,
+      startPosition: resumeRef.current,
+    });
+
+    return () => {
+      persistProgress(media, item);
+      engine.destroy();
+      engineRef.current = null;
+    };
+  }, [item.id, playableUrl, settings.defaultQuality]);
+
   useEffect(() => {
     const media = mediaRef.current;
     if (!media || !playableUrl) return;
-
-    setStatus('loading');
-    setError(null);
-    media.src = playableUrl;
-    media.volume = volume;
-    media.muted = muted;
-    media.playbackRate = playbackRate;
-    media.preload = 'metadata';
 
     const onLoadedMetadata = (): void => {
       const dur = media.duration;
       setDuration(Number.isFinite(dur) ? dur : 0);
       setStatus('paused');
 
-      const pending = resumeRef.current;
+      const pending = engineRef.current?.takePendingSeek() ?? resumeRef.current;
       if (pending > 0 && media.currentTime < 1) {
         try { media.currentTime = pending; } catch {}
       }
@@ -243,7 +293,6 @@ export const VideoPlayer = memo(function VideoPlayer({
     markWatched(item, formatEpisodeLabel(item.season, item.episode));
 
     return () => {
-      persistProgress(media, item);
       media.removeEventListener('loadedmetadata', onLoadedMetadata);
       media.removeEventListener('durationchange', onDurationChange);
       media.removeEventListener('timeupdate', onTimeUpdate);
@@ -257,7 +306,7 @@ export const VideoPlayer = memo(function VideoPlayer({
       media.removeEventListener('ended', onEndedInternal);
       media.removeEventListener('error', onMediaError);
     };
-  }, [item.id, playableUrl, volume, muted, playbackRate]);
+  }, [item.id]);
 
   useEffect(() => {
     const media = mediaRef.current;
@@ -272,6 +321,10 @@ export const VideoPlayer = memo(function VideoPlayer({
     document.addEventListener('visibilitychange', save);
     return () => { window.removeEventListener('pagehide', save); document.removeEventListener('visibilitychange', save); };
   }, [item]);
+
+  useEffect(() => {
+    setEngineName(engineRef.current?.engineName ?? 'none');
+  }, []);
 
   useEffect(() => {
     playerStore.patch({ fullscreen: fullscreen.isFullscreen });
@@ -301,7 +354,7 @@ export const VideoPlayer = memo(function VideoPlayer({
         <PlayerLoadingOverlay status={status} isLive={item.kind === 'live'} hasError={!!error} />
 
         {error ? (
-          <PlayerErrorOverlay error={error} onRetry={retry} onBack={exit} engineName="native" />
+          <PlayerErrorOverlay error={error} onRetry={retry} onBack={exit} engineName={engineName} />
         ) : null}
 
         <PlayerControls
@@ -320,12 +373,16 @@ export const VideoPlayer = memo(function VideoPlayer({
           onVolume={setVolume}
           onToggleMute={toggleMute}
           onRate={setRate}
+          onLevel={setLevel}
           onBack={exit}
           onToggleFullscreen={fullscreen.toggle}
           onTogglePip={pip.toggle}
           pipSupported={pip.isSupported}
           canGoBack={Boolean(onBack) || window.history.length > 1}
-          engineName="native"
+          engineName={engineName}
+          levels={levels}
+          currentLevel={currentLevel}
+          autoLevelEnabled={autoLevelEnabled}
         />
 
         {status === 'idle' ? (

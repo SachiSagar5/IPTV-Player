@@ -20,6 +20,7 @@ import { ContentCard } from './ContentCard';
 import { Icon } from '@/components/common/Icon';
 import { useDpadNavigation } from '@/hooks/useDpadNavigation';
 import { useIsTouch, useIsTvLike } from '@/hooks/useMedia';
+import { formatCount } from '@/utils/format';
 
 /** Anything the shell can key on. Both playlist entries and series groups have `id`. */
 export interface RowItem {
@@ -28,6 +29,8 @@ export interface RowItem {
 
 export interface RowShellProps<T extends RowItem> {
   title: string;
+  icon?: string;
+  count?: number;
   items: readonly T[];
   renderItem: (item: T, index: number) => ReactNode;
   href?: string;
@@ -43,6 +46,8 @@ const STAGGER_CAP = 6;
 
 export function RowShell<T extends RowItem>({
   title,
+  icon,
+  count,
   items,
   renderItem,
   href,
@@ -123,32 +128,44 @@ export function RowShell<T extends RowItem>({
       aria-labelledby={`row-${title}`}
     >
       <div className="mb-4 flex items-end justify-between gap-4 px-4 md:px-8">
-        <h2
-          id={`row-${title}`}
-          className="flex min-w-0 items-center gap-3 text-[15px] font-semibold tracking-tight text-mist-50 md:text-lg"
-        >
-          {/* Short accent rule: gives each row a consistent left anchor so the
-              page reads as a stack of sections rather than a list of strings. */}
-          <span
-            aria-hidden="true"
-            className="rule-accent h-4 w-1 shrink-0 rounded-full transition-[height] duration-300 group-hover/row:h-5"
-          />
-          {href ? (
-            <Link
-              to={href}
-              className="inline-flex min-w-0 items-center gap-1.5 rounded transition-colors hover:text-accent-300"
-            >
+        <div className="flex items-center gap-3">
+          <h2
+            id={`row-${title}`}
+            className="flex min-w-0 items-center gap-3 text-[15px] font-semibold tracking-tight text-mist-50 md:text-lg"
+          >
+            {/* Short accent rule: gives each row a consistent left anchor so the
+                page reads as a stack of sections rather than a list of strings. */}
+            <span
+              aria-hidden="true"
+              className="rule-accent h-4 w-1 shrink-0 rounded-full transition-[height] duration-300 group-hover/row:h-5"
+            />
+            {icon ? (
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-500/12 text-accent-400">
+                <Icon name={icon as import('@/components/common/Icon').IconName} size={16} />
+              </span>
+            ) : null}
+            {href ? (
+              <Link
+                to={href}
+                className="inline-flex min-w-0 items-center gap-1.5 rounded transition-colors hover:text-accent-300"
+              >
+                <span className="truncate">{title}</span>
+                <Icon
+                  name="chevron-right"
+                  size={16}
+                  className="shrink-0 opacity-0 transition-opacity group-hover/row:opacity-70"
+                />
+              </Link>
+            ) : (
               <span className="truncate">{title}</span>
-              <Icon
-                name="chevron-right"
-                size={16}
-                className="shrink-0 opacity-0 transition-opacity group-hover/row:opacity-70"
-              />
-            </Link>
-          ) : (
-            <span className="truncate">{title}</span>
-          )}
-        </h2>
+            )}
+            {count !== undefined && count > 0 ? (
+              <span className="inline-flex items-center justify-center rounded-full border border-white/10 bg-black/50 px-2 py-0.5 text-[10px] font-mono tabular-nums text-mist-400 backdrop-blur-sm">
+                {formatCount(count)}
+              </span>
+            ) : null}
+          </h2>
+        </div>
         {href ? (
           <Link
             to={href}
@@ -226,6 +243,8 @@ export function RowShell<T extends RowItem>({
 
 export interface ContentRowProps {
   title: string;
+  icon?: import('@/components/common/Icon').IconName;
+  count?: number;
   items: readonly ContentItem[];
   variant?: 'poster' | 'channel' | 'wide';
   href?: string;
@@ -240,6 +259,8 @@ export interface ContentRowProps {
 
 export const ContentRow = memo(function ContentRow({
   title,
+  icon,
+  count,
   items,
   variant = 'poster',
   href,
@@ -255,6 +276,8 @@ export const ContentRow = memo(function ContentRow({
   return (
     <RowShell
       title={title}
+      icon={icon}
+      count={count}
       items={items}
       href={href}
       priority={priority}

@@ -241,14 +241,9 @@ export class HlsEngine {
 
     if (shape.kind === 'unsupported') {
       // For unsupported containers (MKV, AVI, etc.), try proxy first in case
-      // the proxy can remux or the container is misidentified by extension.
-      // If still unsupported after proxy, show the error.
-      this.events.onFatalError({
-        message: `This is a ${shape.label} file, which no browser can decode. VLC, Kodi or a desktop player will open it; a web player cannot.`,
-        detail: `Container .${shape.ext} is outside the set browsers can demux.`,
-        recoverable: false,
-        attempts: 0,
-      });
+      // the proxy does server-side transcoding. If the proxy returns a playable
+      // format, it will work. Otherwise, show a clear error.
+      this.loadDirect(proxiedSource, options.startPosition, 'progressive');
       return;
     }
 
@@ -294,23 +289,20 @@ export class HlsEngine {
     token: number,
   ): Promise<void> {
     if (this.destroyed || token !== this.loadToken) return;
-    const probe = await sniffStream(source.url);
+    const proxiedSource = applyProxy(source);
+    const probe = await sniffStream(proxiedSource.url);
     // The user moved on while the probe was in flight.
     if (this.destroyed || token !== this.loadToken) return;
 
     if (probe) {
       const shape = classifySniffed(probe.shape);
       if (shape.kind === 'progressive') {
-        this.loadDirect(source, options.startPosition, 'progressive');
+        this.loadDirect(proxiedSource, options.startPosition, 'progressive');
         return;
       }
       if (shape.kind === 'unsupported') {
-        this.events.onFatalError({
-          message: `This is a ${shape.label} file. VLC, Kodi or a desktop player will open it; no browser can. The stream was identified from its actual bytes, not its file name.`,
-          detail: `Container ${shape.ext} is outside the set browsers can demux.`,
-          recoverable: false,
-          attempts: 0,
-        });
+        // Try via proxy in case server-side transcoding is available
+        this.loadDirect(proxiedSource, options.startPosition, 'progressive');
         return;
       }
     }
@@ -318,7 +310,7 @@ export class HlsEngine {
     // Still unknown — the probe said nothing useful (rare) or refused to answer
     // (a provider without CORS headers). Either way, the historical behaviour is
     // the sane fallback: assume HLS and let the engine name the failure.
-    await this.loadWithHlsJs(source, options, token);
+    await this.loadWithHlsJs(proxiedSource, options, token);
   }
 
   private loadDirect(

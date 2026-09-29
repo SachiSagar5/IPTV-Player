@@ -21,6 +21,7 @@ import { SeriesCard } from '@/components/cards/SeriesCard';
 import { PageEnd } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/common/States';
 import { ButtonLink } from '@/components/common/Button';
+import { Icon } from '@/components/common/Icon';
 import { useDpadNavigation } from '@/hooks/useDpadNavigation';
 import {
   getHiddenChannelIds,
@@ -50,6 +51,8 @@ const ENTRY = {
   live: 5,
   episodes: 6,
 } as const;
+
+
 
 export default function HomePage() {
   const items = useAppSelector((s) => s.items);
@@ -149,49 +152,62 @@ export default function HomePage() {
     return null;
   }, [continueWatching, live, buckets, items, hiddenIds]);
 
+  
+
   if (items.length === 0) {
     return (
-      <div ref={rootRef}>
-        <EmptyState
-          icon="layers"
-          title={playlists.length === 0 ? 'No playlist yet' : 'This playlist is empty'}
-          message={
-            playlists.length === 0
-              ? 'Add an M3U or M3U8 playlist URL to get started. Everything is stored on this device.'
-              : 'The active playlist parsed successfully but contained no entries.'
-          }
-          action={
-            playlists.length === 0 ? (
-              <ButtonLink to={ROUTES.playlists} icon="plus">
-                Add a playlist
-              </ButtonLink>
-            ) : (
-              <ButtonLink to={ROUTES.playlists} variant="secondary" icon="refresh">
-                Switch playlist
-              </ButtonLink>
-            )
-          }
-        />
-        <PageEnd />
+      <div ref={rootRef} className="flex min-h-[60vh] flex-col items-center justify-center px-4">
+        <div className="animate-rise w-full max-w-md text-center">
+          <div className="mx-auto flex h-18 w-18 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-500/15 to-accent-700/15 border border-accent-500/20">
+            <Icon name="layers" size={36} className="text-accent-400" />
+          </div>
+          <EmptyState
+            icon="layers"
+            title={playlists.length === 0 ? 'No playlist yet' : 'This playlist is empty'}
+            message={
+              playlists.length === 0
+                ? 'Add an M3U or M3U8 playlist URL to get started. Everything is stored on this device.'
+                : 'The active playlist parsed successfully but contained no entries.'
+            }
+            action={
+              playlists.length === 0 ? (
+                <ButtonLink to={ROUTES.playlists} icon="plus" shimmer size="lg">
+                  Add a playlist
+                </ButtonLink>
+              ) : (
+                <ButtonLink to={ROUTES.playlists} variant="secondary" icon="refresh" size="lg">
+                  Switch playlist
+                </ButtonLink>
+              )
+            }
+          />
+          <PageEnd />
+        </div>
       </div>
     );
   }
 
   return (
     <div ref={rootRef}>
-      {hero ? (
-        <Hero
-          item={hero.item}
-          progress={progressById.get(hero.item.id)}
-          resume={hero.resume}
-          favorite={favoriteIds.has(hero.item.id)}
-          onToggleFavorite={onToggleFavorite}
-        />
-      ) : null}
+      {/* Hero Section */}
+      <section className="relative -mx-4 mb-6 md:mx-0" aria-label="Featured">
+        {hero ? (
+          <Hero
+            item={hero.item}
+            progress={progressById.get(hero.item.id)}
+            resume={hero.resume}
+            favorite={favoriteIds.has(hero.item.id)}
+            onToggleFavorite={onToggleFavorite}
+          />
+        ) : null}
+      </section>
 
+      {/* Continue Watching */}
       {continueWatching.length > 0 ? (
         <ContentRow
           title="Continue watching"
+          icon="clock"
+          count={continueWatching.length}
           large
           staggerIndex={ENTRY.continueWatching}
           items={continueWatching}
@@ -201,9 +217,12 @@ export default function HomePage() {
         />
       ) : null}
 
+      {/* My List */}
       {favorites.length > 0 ? (
         <ContentRow
           title="My List"
+          icon="list"
+          count={favorites.length}
           large
           staggerIndex={ENTRY.favorites}
           items={favorites}
@@ -214,9 +233,12 @@ export default function HomePage() {
         />
       ) : null}
 
+      {/* Recently Watched (only if no continue watching) */}
       {recent.length > 0 && continueWatching.length === 0 ? (
         <ContentRow
           title="Recently watched"
+          icon="clock"
+          count={recent.length}
           large
           staggerIndex={ENTRY.recent}
           items={recent}
@@ -226,11 +248,12 @@ export default function HomePage() {
         />
       ) : null}
 
-      {/* Series groups are derived, not playlist entries, so this row uses the
-          shared shell directly rather than pretending to be a `ContentRow`. */}
+      {/* Series */}
       {series.length > 0 ? (
         <RowShell
-          title={`Series · ${formatCount(seriesIndex.groups.length)} shows`}
+          title="Series"
+          icon="layers"
+          count={seriesIndex.groups.length}
           staggerIndex={ENTRY.series}
           items={series}
           href={ROUTES.series}
@@ -238,9 +261,12 @@ export default function HomePage() {
         />
       ) : null}
 
+      {/* Movies */}
       {buckets.movie.length > 0 ? (
         <ContentRow
           title="Movies"
+          icon="film"
+          count={buckets.movie.length}
           large
           staggerIndex={ENTRY.movies}
           items={buckets.movie.slice(0, ROW_LIMIT)}
@@ -251,9 +277,12 @@ export default function HomePage() {
         />
       ) : null}
 
+      {/* Live TV */}
       {live.length > 0 ? (
         <ContentRow
           title="Live channels"
+          icon="tv"
+          count={live.length}
           large
           staggerIndex={ENTRY.live}
           items={live.slice(0, ROW_LIMIT)}
@@ -265,9 +294,12 @@ export default function HomePage() {
         />
       ) : null}
 
+      {/* Episodes (fallback when no series groups) */}
       {buckets.series.length > 0 && series.length === 0 ? (
         <ContentRow
           title="Episodes"
+          icon="film"
+          count={buckets.series.length}
           large
           staggerIndex={ENTRY.episodes}
           items={buckets.series.slice(0, ROW_LIMIT)}
@@ -278,11 +310,33 @@ export default function HomePage() {
         />
       ) : null}
 
+      {/* Playlist footer */}
       {activePlaylist ? (
-        <p className="px-4 text-[11px] text-mist-600 md:px-8">
-          {formatCount(activePlaylist.itemCount)} entries from “{activePlaylist.name}”
-          {activePlaylist.lastUpdated ? '' : ' · never refreshed'}
-        </p>
+        <div className="animate-rise mt-8 px-4 md:px-8" style={{ animationDelay: '200ms' }}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-4 rounded-xl bg-gradient-to-r from-ink-900/60 to-ink-850/60 border border-white/5 backdrop-blur-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-500/15 text-accent-400">
+                <Icon name="playlist" size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-mist-50">{formatCount(activePlaylist.itemCount)} items</p>
+                <p className="text-[11px] text-mist-500">
+                  {activePlaylist.lastUpdated
+                    ? `Updated ${new Date(activePlaylist.lastUpdated).toLocaleDateString()}`
+                    : 'Never refreshed'}
+                </p>
+              </div>
+            </div>
+            <ButtonLink
+              to={ROUTES.playlists}
+              variant="ghost"
+              size="sm"
+              icon="settings"
+            >
+              Manage playlists
+            </ButtonLink>
+          </div>
+        </div>
       ) : null}
 
       <PageEnd />

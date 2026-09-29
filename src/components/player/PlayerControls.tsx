@@ -34,12 +34,16 @@ export interface PlayerControlsProps {
   onVolume: (value: number) => void;
   onToggleMute: () => void;
   onRate: (rate: number) => void;
+  onLevel: (index: number) => void;
   onBack: () => void;
   onToggleFullscreen: () => void;
   onTogglePip: () => void;
   pipSupported: boolean;
   canGoBack: boolean;
   engineName: string;
+  levels: Array<{ index: number; label: string; height: number; bitrate: number }>;
+  currentLevel: number;
+  autoLevelEnabled: boolean;
 }
 
 const RATES = [0.5, 0.75, 1, 1.25, 1.5, 2];
@@ -60,17 +64,21 @@ export const PlayerControls = memo(function PlayerControls({
   onVolume,
   onToggleMute,
   onRate,
+  onLevel,
   onBack,
   onToggleFullscreen,
   onTogglePip,
   pipSupported,
   canGoBack,
   engineName,
+  levels,
+  currentLevel,
+  autoLevelEnabled,
 }: PlayerControlsProps) {
-  const [menu, setMenu] = useState<'none' | 'speed'>('none');
+  const [menu, setMenu] = useState<'none' | 'quality' | 'speed'>('none');
   const barRef = useRef<HTMLDivElement>(null);
   const isLive = item.kind === 'live';
-  const isFullscreen = false; // Not tracked in simple mode
+  const isFullscreen = false;
 
   useDpadNavigation(barRef, { loop: false });
 
@@ -80,6 +88,10 @@ export const PlayerControls = memo(function PlayerControls({
 
   const durationLabel = isLive ? 'LIVE' : formatTime(duration);
   const positionLabel = isLive ? 'At the edge' : formatTime(currentTime);
+
+  const activeQualityLabel = autoLevelEnabled
+    ? `Auto${levels.length > 0 ? ` (${levels.find((l) => l.index === currentLevel)?.label ?? levels[0].label})` : ''}`
+    : (levels.find((l) => l.index === currentLevel)?.label ?? 'Auto');
 
   const itemRating = useItemRating({ kind: item.kind, title: item.name });
 
@@ -221,6 +233,15 @@ export const PlayerControls = memo(function PlayerControls({
 
           <div className="flex-1" />
 
+          {levels.length > 1 ? (
+            <MenuButton
+              icon="settings"
+              label={`Quality: ${activeQualityLabel}`}
+              active={menu === 'quality'}
+              onClick={() => setMenu(menu === 'quality' ? 'none' : 'quality')}
+            />
+          ) : null}
+
           <MenuButton
             icon="speed"
             label={`Playback speed: ${playbackRate}x`}
@@ -247,6 +268,30 @@ export const PlayerControls = memo(function PlayerControls({
       </div>
 
       {/* Menus */}
+      {menu === 'quality' && levels.length > 1 ? (
+        <PlayerMenu label="Quality" onClose={closeMenu}>
+          <MenuItem
+            label="Auto"
+            active={autoLevelEnabled}
+            onClick={() => {
+              onLevel(-1);
+              closeMenu();
+            }}
+          />
+          {levels.map((level) => (
+            <MenuItem
+              key={level.index}
+              label={level.label}
+              hint={level.bitrate ? `${Math.round(level.bitrate / 1000)} kbps` : undefined}
+              active={!autoLevelEnabled && currentLevel === level.index}
+              onClick={() => {
+                onLevel(level.index);
+                closeMenu();
+              }}
+            />
+          ))}
+        </PlayerMenu>
+      ) : null}
       {menu === 'speed' ? (
         <PlayerMenu label="Playback speed" onClose={closeMenu}>
           {RATES.map((rate) => (
