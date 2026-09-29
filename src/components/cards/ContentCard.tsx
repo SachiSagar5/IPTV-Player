@@ -178,7 +178,7 @@ export const ContentCard = memo(function ContentCard({
         {/* Live badge. Present only for live channels. */}
         {isLive ? (
           <span className="pointer-events-none absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-full border border-live-500/30 bg-black/70 px-1.5 py-0.5 text-[9px] font-bold tracking-widest text-live-400 uppercase backdrop-blur-sm">
-            <span className="live-pulse h-1.5 w-1.5 rounded-full bg-live-400" />
+            <span className="live-pulse h-1.5 w-1.5 rounded-full bg-live-400 shadow-[0_0_8px_2px_rgba(255,90,90,0.7)]" />
             Live
           </span>
         ) : null}
@@ -210,7 +210,7 @@ export const ContentCard = memo(function ContentCard({
         {progressPercent > 0 ? (
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1 bg-black/60">
             <div
-              className="h-full bg-gradient-to-r from-accent-500 to-accent-300"
+              className="h-full bg-gradient-to-r from-accent-500 to-accent-300 shadow-[0_0_8px_rgb(var(--accent-400-rgb)/0.6)]"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -237,7 +237,7 @@ export const ContentCard = memo(function ContentCard({
             title={favorite ? 'Remove from My List' : 'Add to My List'}
             className={`absolute top-1.5 right-1.5 flex h-7 w-7 items-center justify-center rounded-md border backdrop-blur-sm transition-all duration-200 focus-visible:opacity-100 ${
               favorite
-                ? 'border-accent-400/60 bg-accent-500/90 text-ink-1000 opacity-100'
+                ? 'border-accent-400/60 bg-accent-500/90 text-ink-1000 opacity-100 shadow-[0_0_12px_rgb(var(--accent-400-rgb)/0.4)]'
                 : 'border-white/15 bg-black/60 text-mist-200 opacity-0 group-hover/card:opacity-100 focus-visible:opacity-100'
             }`}
           >

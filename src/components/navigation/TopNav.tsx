@@ -163,7 +163,7 @@ export const TopNav = memo(function TopNav() {
                 className={({ isActive }) =>
                   `group/nav relative rounded-full px-3.5 py-2 text-sm font-medium whitespace-nowrap transition-colors duration-200 ${
                     isActive
-                      ? 'bg-accent-500/12 text-mist-50'
+                      ? 'bg-accent-500/12 text-mist-50 shadow-[inset_0_0_0_1px_rgb(var(--accent-400-rgb)/0.3)]'
                       : 'text-mist-400 hover:bg-ink-800/70 hover:text-mist-50'
                   }`
                 }

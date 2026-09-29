@@ -161,7 +161,9 @@ export const Hero = memo(function Hero({
             className="animate-rise text-display text-3xl font-bold text-mist-50 drop-shadow-[0_4px_24px_rgba(0,0,0,0.75)] sm:text-4xl lg:text-6xl"
             style={{ animationDelay: '40ms' }}
           >
-            {title}
+            <span className="bg-gradient-to-r from-mist-50 via-accent-200 to-mist-50 bg-clip-text text-transparent">
+              {title}
+            </span>
           </h1>
 
           {meta.length > 0 ? (

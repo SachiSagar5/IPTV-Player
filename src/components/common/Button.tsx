@@ -43,6 +43,10 @@ const VARIANTS: Record<Variant, string> = {
     'bg-live-500/12 text-live-400 border border-live-500/35 hover:bg-live-500/22 hover:border-live-500/50',
 };
 
+/* Shimmer variant for primary CTAs — a slow specular pass across the gradient.
+   Added via `.sheen` utility in index.css. */
+const SHIMMER = 'sheen relative overflow-hidden';
+
 const SIZES: Record<Size, string> = {
   sm: 'h-8 px-3 text-xs',
   md: 'h-10 px-4 text-sm',
@@ -157,6 +161,7 @@ export interface ButtonLinkProps extends LinkProps {
   iconRight?: IconName;
   fullWidth?: boolean;
   children?: ReactNode;
+  shimmer?: boolean;
 }
 
 /** Same visual language as `Button`, but renders an anchor for real navigation. */
@@ -168,12 +173,13 @@ export const ButtonLink = memo(function ButtonLink({
   fullWidth = false,
   className = '',
   children,
+  shimmer = false,
   ...rest
-}: ButtonLinkProps) {
+}: ButtonLinkProps & { shimmer?: boolean }) {
   const iconSize = size === 'sm' ? 14 : size === 'xl' ? 22 : 18;
   return (
     <Link
-      className={`${BASE} ${VARIANTS[variant]} ${SIZES[size]} ${
+      className={`${BASE} ${VARIANTS[variant]} ${SIZES[size]} ${shimmer ? SHIMMER : ''} ${
         fullWidth ? 'w-full' : ''
       } ${className}`}
       {...rest}
