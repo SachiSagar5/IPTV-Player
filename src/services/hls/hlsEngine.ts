@@ -20,8 +20,34 @@ import type {
   HlsConfig,
   LoaderContext,
 } from 'hls.js';
-import { classifyStream, isNativeHlsSupported } from './nativeSupport';
+import {
+  classifyStream,
+  isNativeHlsSupported,
+  sniffStreamShape,
+  type SniffedShape,
+  type StreamShape,
+} from './nativeSupport';
 import type { StreamSource } from '@/types';
+
+const PROXY_ENDPOINT = '/api/stream';
+
+function buildProxyUrl(targetUrl: string): string {
+  const encoded = encodeURIComponent(targetUrl);
+  return `${PROXY_ENDPOINT}?url=${encoded}`;
+}
+
+function shouldUseProxy(url: string): boolean {
+  if (typeof window === 'undefined') return false;
+  const isHttpsPage = window.location.protocol === 'https:';
+  const isHttpUrl = url.startsWith('http://');
+  if (isHttpsPage && isHttpUrl) return true;
+  return false;
+}
+
+function applyProxy(source: StreamSource): StreamSource {
+  if (!shouldUseProxy(source.url)) return source;
+  return { ...source, url: buildProxyUrl(source.url) };
+}
 import type {
   AudioTrackInfo,
   PlayerErrorInfo,
@@ -200,14 +226,23 @@ export class HlsEngine {
       return;
     }
 
+    // Apply proxy for mixed content and other cases where the browser cannot
+    // directly fetch the stream. The proxy runs on the same origin (HTTPS) and
+    // forwards the request to the target, adding CORS headers and handling Range.
+    const proxiedSource = applyProxy(source);
+    const effectiveUrl = proxiedSource.url;
+
     // The engine follows the *URL*, not just the platform. Deciding by platform
     // alone sent every progressive file through hls.js, which parses its input as
     // an M3U8 manifest and so rejects a perfectly playable MP4 with
     // "manifest is not valid M3U8" — the single biggest source of "works in VLC,
     // fails here" reports from real-world playlists.
-    const shape = classifyStream(source.url);
+    const shape = classifyStream(effectiveUrl);
 
     if (shape.kind === 'unsupported') {
+      // For unsupported containers (MKV, AVI, etc.), try proxy first in case
+      // the proxy can remux or the container is misidentified by extension.
+      // If still unsupported after proxy, show the error.
       this.events.onFatalError({
         message: `This is a ${shape.label} file, which no browser can decode. VLC, Kodi or a desktop player will open it; a web player cannot.`,
         detail: `Container .${shape.ext} is outside the set browsers can demux.`,
@@ -221,7 +256,7 @@ export class HlsEngine {
     // not just Safari. `<video>` is the only thing that can play them, and this
     // path also reports the native track list and the resume position.
     if (shape.kind === 'progressive') {
-      this.loadDirect(source, options.startPosition, 'progressive');
+      this.loadDirect(proxiedSource, options.startPosition, 'progressive');
       return;
     }
 
@@ -231,11 +266,59 @@ export class HlsEngine {
     // Deciding this *before* the dynamic import keeps Safari from paying for a
     // chunk it will never use.
     if (isNativeHlsSupported()) {
-      this.loadDirect(source, options.startPosition, 'native');
+      this.loadDirect(proxiedSource, options.startPosition, 'native');
       return;
     }
 
-    void this.loadWithHlsJs(source, options, token);
+    if (shape.kind === 'unknown') {
+      this.loadUnknown(proxiedSource, options, token);
+      return;
+    }
+
+    void this.loadWithHlsJs(proxiedSource, options, token);
+  }
+
+  /**
+   * A URL with no usable extension. Historically that meant "assume HLS", which
+   * is right most of the time — but extension-less ids from IPTV panels resolve
+   * to Matroska or AVI just as often, and sending those to hls.js produces
+   * minutes of manifest retries that look exactly like "stuck buffering".
+   *
+   * A single Range request reads the first byte(s), the container is judged
+   * from the actual bytes, and only streams that are still unknown afterwards
+   * fall through to the HLS assumption.
+   */
+  private async loadUnknown(
+    source: StreamSource,
+    options: { defaultLevel: number; startPosition: number },
+    token: number,
+  ): Promise<void> {
+    if (this.destroyed || token !== this.loadToken) return;
+    const probe = await sniffStream(source.url);
+    // The user moved on while the probe was in flight.
+    if (this.destroyed || token !== this.loadToken) return;
+
+    if (probe) {
+      const shape = classifySniffed(probe.shape);
+      if (shape.kind === 'progressive') {
+        this.loadDirect(source, options.startPosition, 'progressive');
+        return;
+      }
+      if (shape.kind === 'unsupported') {
+        this.events.onFatalError({
+          message: `This is a ${shape.label} file. VLC, Kodi or a desktop player will open it; no browser can. The stream was identified from its actual bytes, not its file name.`,
+          detail: `Container ${shape.ext} is outside the set browsers can demux.`,
+          recoverable: false,
+          attempts: 0,
+        });
+        return;
+      }
+    }
+
+    // Still unknown — the probe said nothing useful (rare) or refused to answer
+    // (a provider without CORS headers). Either way, the historical behaviour is
+    // the sane fallback: assume HLS and let the engine name the failure.
+    await this.loadWithHlsJs(source, options, token);
   }
 
   private loadDirect(
@@ -717,5 +800,66 @@ function describeMediaError(data: ErrorData): string {
       return 'The media buffer overflowed.';
     default:
       return data.details ?? 'Media error';
+  }
+}
+
+/** Map what the bytes say onto the same stream shape the URL classifier uses. */
+function classifySniffed(shape: SniffedShape): StreamShape {
+  switch (shape) {
+    case 'mp4':
+    case 'webm':
+    case 'mov':
+    case 'ogg':
+      return { kind: 'progressive' };
+    case 'matroska':
+      return { kind: 'unsupported', label: 'Matroska (.mkv)', ext: 'mkv' };
+    case 'avi':
+      return { kind: 'unsupported', label: 'AVI', ext: 'avi' };
+    case 'flv':
+      return { kind: 'unsupported', label: 'Flash Video (.flv)', ext: 'flv' };
+    case 'wmv':
+      return { kind: 'unsupported', label: 'Windows Media (.wmv)', ext: 'wmv' };
+    case 'mpeg':
+      return { kind: 'unsupported', label: 'MPEG (.mpg)', ext: 'mpg' };
+    case 'ts':
+      return { kind: 'unsupported', label: 'MPEG transport stream (.ts)', ext: 'ts' };
+    case 'hls':
+      return { kind: 'hls' };
+    case 'unknown':
+      return { kind: 'unknown' };
+  }
+}
+
+const SNIFF_TIMEOUT_MS = 8_000;
+const SNIFF_RANGE = 'bytes=0-16';
+
+/**
+ * Read just enough of a stream to name its container, then back off.
+ *
+ * `Range: bytes=0-16` keeps every cooperative server honest, and servers that
+ * ignore Range and answer 200 are handled by reading a single body chunk and
+ * cancelling the reader — so a 3 GB file is never downloaded, only 16-ish bytes
+ * of its head. Any failure (mixed content already rejected by the caller, no
+ * CORS, a dead host, a malformed response) returns null and the unknown-stream
+ * path falls back to its historical HLS assumption.
+ */
+async function sniffStream(url: string): Promise<{ shape: SniffedShape } | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SNIFF_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, {
+      headers: { Range: SNIFF_RANGE },
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+    if (!response.body) return { shape: 'unknown' };
+    const { value } = await response.body.getReader().read();
+    void response.body.cancel().catch(() => undefined);
+    if (!value) return { shape: 'unknown' };
+    return { shape: sniffStreamShape(value, response.headers.get('content-type') ?? '') };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
