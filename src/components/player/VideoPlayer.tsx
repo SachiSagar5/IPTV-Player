@@ -347,6 +347,7 @@ export const VideoPlayer = memo(function VideoPlayer({
           className="h-full max-h-[100dvh] w-full bg-black object-contain"
           playsInline
           controls={false}
+          preload="auto"
           tabIndex={-1}
           aria-label={item.name}
         />

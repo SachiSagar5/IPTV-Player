@@ -323,6 +323,7 @@ export class HlsEngine {
     this.usingNative = true;
     this.usingProgressive = mode === 'progressive';
     video.src = source.url;
+    video.preload = 'auto';
     if (startPosition > 0) {
       const onLoaded = (): void => {
         video.removeEventListener('loadedmetadata', onLoaded);
@@ -390,19 +391,19 @@ export class HlsEngine {
     }
 
     const hls = new HlsCtor({
-      // Buffering strategy. The defaults are tuned for a desktop broadband
-      // connection; for IPTV the provider's CDN behaviour matters more than the
-      // nominal bandwidth, so we keep buffers generous but not unbounded.
-      maxBufferLength: 30,
-      maxMaxBufferLength: 60,
-      backBufferLength: 30,
-      maxBufferSize: 60 * 1000 * 1000,
+      // Buffering strategy — increased for lag-free movie playback.
+      // Large forward buffer preloads well ahead of playhead; generous back buffer
+      // allows instant seeking backwards without re-fetching.
+      maxBufferLength: 120,
+      maxMaxBufferLength: 300,
+      backBufferLength: 60,
+      maxBufferSize: 200 * 1000 * 1000,
       // Resume slightly behind the live edge rather than at it, which is what
       // avoids a stall on a slow join.
       liveSyncDurationCount: 3,
       liveMaxLatencyDurationCount: 10,
       enableWorker: true,
-      lowLatencyMode: true,
+      lowLatencyMode: false,
       // -1 means "let ABR pick". The engine receives the array *position*, which
       // is what `startLevel` expects.
       startLevel: options.defaultLevel,
