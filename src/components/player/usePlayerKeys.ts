@@ -21,11 +21,9 @@
  * `<button>`, which is exactly what a remote's centre key produces.
  */
 import { useCallback, useEffect, useRef } from 'react';
-import { playerStore, usePlayerSelector } from '@/store/playerStore';
 
 const AUTO_HIDE_MS = 3000;
 const SEEK_STEP = 10;
-const LIVE_SEEK_STEP = 30;
 
 /** The control bar, marked by `PlayerControls`. */
 const CONTROLS_SELECTOR = '[data-player-controls]';
@@ -40,13 +38,12 @@ export interface PlayerKeyHandlers {
   onToggleFullscreen: () => void;
   onTogglePip: () => void;
   onBack: () => void;
+  setControlsVisible: (visible: boolean) => void;
 }
 
 export interface UsePlayerKeysResult {
-  controlsVisible: boolean;
   showControls: () => void;
   hideControls: () => void;
-  toggleControls: () => void;
 }
 
 export function usePlayerKeys(handlers: Partial<PlayerKeyHandlers> = {}): UsePlayerKeysResult {
@@ -63,153 +60,131 @@ export function usePlayerKeys(handlers: Partial<PlayerKeyHandlers> = {}): UsePla
 
   const scheduleHide = useCallback(() => {
     clearTimer();
-    const state = playerStore.getState();
-    // Never auto-hide while paused, buffering, or showing an error: the user
-    // needs those controls to recover.
-    if (state.status === 'paused' || state.status === 'error' || state.status === 'loading') {
-      return;
-    }
     hideTimer.current = setTimeout(() => {
-      // Never fade the bar out from under a focused control. On a remote there
-      // is no pointer to bring it back — the element would keep focus while
-      // becoming `opacity-0` and `pointer-events-none`, and the user would be
-      // pressing OK on an invisible button.
       const active = document.activeElement as HTMLElement | null;
       if (active?.closest(CONTROLS_SELECTOR)) return;
-      playerStore.patch({ controlsVisible: false });
+      latest.current.setControlsVisible?.(false);
     }, AUTO_HIDE_MS);
   }, [clearTimer]);
 
   const showControls = useCallback(() => {
-    playerStore.patch({ controlsVisible: true });
+    latest.current.setControlsVisible?.(true);
     scheduleHide();
   }, [scheduleHide]);
 
   const hideControls = useCallback(() => {
     clearTimer();
-    playerStore.patch({ controlsVisible: false });
+    latest.current.setControlsVisible?.(false);
   }, [clearTimer]);
-
-  const toggleControls = useCallback(() => {
-    if (playerStore.getState().controlsVisible) hideControls();
-    else showControls();
-  }, [hideControls, showControls]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       const target = event.target as HTMLElement | null;
-      // Never steal keys from a text field or an open menu.
-      if (
-        target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable ||
-          target.closest('[role="menu"]'))
-      ) {
-        return;
+
+      if (target?.closest(CONTROLS_SELECTOR)) {
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Escape'].includes(event.key)) {
+          return;
+        }
       }
-      // Focus is on a control in the bar: the D-pad resolves the arrows, and OK
-      // is the browser's own activation. See the module comment.
-      if (target?.closest(`${CONTROLS_SELECTOR} [data-nav]`)) return;
 
       const h = latest.current;
-      const state = playerStore.getState();
-      let handled = true;
 
       switch (event.key) {
         case ' ':
-        case 'Spacebar':
         case 'k':
         case 'K':
+          event.preventDefault();
           h.onTogglePlay?.();
           break;
         case 'ArrowLeft':
         case 'j':
         case 'J':
-          h.onSeekBy?.(state.isLive ? -LIVE_SEEK_STEP : -SEEK_STEP);
+          event.preventDefault();
+          h.onSeekBy?.(-SEEK_STEP);
           break;
         case 'ArrowRight':
         case 'l':
         case 'L':
-          h.onSeekBy?.(state.isLive ? LIVE_SEEK_STEP : SEEK_STEP);
+          event.preventDefault();
+          h.onSeekBy?.(SEEK_STEP);
           break;
         case 'ArrowUp':
-          h.onVolume?.(Math.min(1, state.volume + 0.05));
+          event.preventDefault();
+          h.onVolume?.(Math.min(1, 1 + 0.1));
           break;
         case 'ArrowDown':
-          h.onVolume?.(Math.max(0, state.volume - 0.05));
+          event.preventDefault();
+          h.onVolume?.(Math.max(0, 1 - 0.1));
           break;
         case 'm':
         case 'M':
+          event.preventDefault();
           h.onToggleMute?.();
           break;
         case 'f':
         case 'F':
+          event.preventDefault();
           h.onToggleFullscreen?.();
-          break;
-        case 'c':
-        case 'C':
-        case 'v':
-        case 'V':
-          h.onCycleSubtitles?.();
           break;
         case 'p':
         case 'P':
+          event.preventDefault();
           h.onTogglePip?.();
           break;
-        case '>':
-        case '.':
-          h.onRate?.(0.25);
+        case 'c':
+        case 'C':
+          event.preventDefault();
+          h.onCycleSubtitles?.();
           break;
-        case '<':
+        case 'v':
+        case 'V':
+          event.preventDefault();
+          h.onCycleSubtitles?.();
+          break;
         case ',':
+        case '<':
+          event.preventDefault();
           h.onRate?.(-0.25);
           break;
+        case '.':
+        case '>':
+          event.preventDefault();
+          h.onRate?.(0.25);
+          break;
         case 'Escape':
-          // Fullscreen first; a remote's Back button must never exit the app
-          // directly out of fullscreen.
-          if (state.fullscreen) h.onToggleFullscreen?.();
-          else h.onBack?.();
+          h.onBack?.();
           break;
         default:
-          handled = false;
+          return;
       }
-
-      if (handled) {
-        event.preventDefault();
-        showControls();
-      } else {
-        // Any other key still reveals the controls.
-        if (playerStore.getState().controlsVisible) scheduleHide();
-      }
+      h.setControlsVisible?.(true);
+      scheduleHide();
     };
 
-    const onVisibilityChange = (): void => {
-      if (document.visibilityState === 'visible') showControls();
-    };
-
-    // Focus arriving in the bar means the user is navigating it, which on a
-    // remote is the only signal there is that the controls should be showing.
-    const onFocusIn = (event: FocusEvent): void => {
-      const target = event.target as HTMLElement | null;
-      if (target?.closest(CONTROLS_SELECTOR)) showControls();
+    const onFocusIn = (): void => {
+      latest.current.setControlsVisible?.(true);
+      scheduleHide();
     };
 
     window.addEventListener('keydown', onKeyDown);
-    document.addEventListener('visibilitychange', onVisibilityChange);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        clearTimer();
+        latest.current.setControlsVisible?.(false);
+      }
+    });
     document.addEventListener('focusin', onFocusIn);
+
     return () => {
       window.removeEventListener('keydown', onKeyDown);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
+      document.removeEventListener('visibilitychange', onFocusIn);
       document.removeEventListener('focusin', onFocusIn);
       clearTimer();
     };
-  }, [showControls, scheduleHide, clearTimer]);
+  }, [clearTimer, scheduleHide]);
 
   return {
-    controlsVisible: usePlayerSelector((s) => s.controlsVisible),
     showControls,
     hideControls,
-    toggleControls,
   };
 }

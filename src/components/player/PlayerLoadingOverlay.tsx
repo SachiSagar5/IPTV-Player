@@ -1,18 +1,17 @@
-/**
- * Spinner / buffering surface.
- *
- * Kept separate from PlayerErrorOverlay so the two can never both be mounted:
- * the spinner only paints while the status is `loading` or `buffering` and no
- * error is present.
- */
 import { memo } from 'react';
-import { usePlayerSelector } from '@/store/playerStore';
 import { Spinner } from '@/components/common/Button';
 
-export const PlayerLoadingOverlay = memo(function PlayerLoadingOverlay() {
-  const status = usePlayerSelector((s) => s.status);
-  const isLive = usePlayerSelector((s) => s.isLive);
-  const hasError = usePlayerSelector((s) => s.error !== null);
+interface PlayerLoadingOverlayProps {
+  status: 'idle' | 'loading' | 'playing' | 'paused' | 'buffering' | 'error' | 'ended';
+  isLive: boolean;
+  hasError: boolean;
+}
+
+export const PlayerLoadingOverlay = memo(function PlayerLoadingOverlay({
+  status,
+  isLive,
+  hasError,
+}: PlayerLoadingOverlayProps) {
   if (hasError || (status !== 'loading' && status !== 'buffering')) return null;
 
   return (

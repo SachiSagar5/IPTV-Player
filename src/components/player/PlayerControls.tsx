@@ -1,19 +1,14 @@
 /**
  * Player control bar.
  *
- * Performance: this is the only component that subscribes to the high-frequency
+ * Performance: this is the only component that re-renders on high-frequency
  * player ticks (`currentTime`, `buffered`, `status`). Everything else on the
  * player screen reads a stable slice, so a 4 Hz tick re-renders a progress bar
  * and nothing more.
- *
- * Track menus are only rendered when the stream actually provides them —
- * quality comes from the manifest's level list, audio from its audio groups,
- * subtitles from its subtitle groups. Nothing is invented.
  */
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { ContentItem } from '@/types';
-import { usePlayerSelector } from '@/store/playerStore';
 import { Icon } from '@/components/common/Icon';
 import type { IconName } from '@/components/common/Icon';
 import { formatTime } from '@/utils/format';
@@ -26,15 +21,19 @@ import { navCandidates } from '@/hooks/navCandidates';
 export interface PlayerControlsProps {
   visible: boolean;
   item: ContentItem;
+  status: 'idle' | 'loading' | 'playing' | 'paused' | 'buffering' | 'error' | 'ended';
+  duration: number;
+  currentTime: number;
+  buffered: number;
+  volume: number;
+  muted: boolean;
+  playbackRate: number;
   onTogglePlay: () => void;
   onSeek: (seconds: number) => void;
   onSeekBy: (delta: number) => void;
   onVolume: (value: number) => void;
   onToggleMute: () => void;
   onRate: (rate: number) => void;
-  onLevel: (index: number) => void;
-  onAudioTrack: (index: number) => void;
-  onSubtitleTrack: (index: number) => void;
   onBack: () => void;
   onToggleFullscreen: () => void;
   onTogglePip: () => void;
@@ -48,15 +47,19 @@ const RATES = [0.5, 0.75, 1, 1.25, 1.5, 2];
 export const PlayerControls = memo(function PlayerControls({
   visible,
   item,
+  status,
+  duration,
+  currentTime,
+  buffered,
+  volume,
+  muted,
+  playbackRate,
   onTogglePlay,
   onSeek,
   onSeekBy,
   onVolume,
   onToggleMute,
   onRate,
-  onLevel,
-  onAudioTrack,
-  onSubtitleTrack,
   onBack,
   onToggleFullscreen,
   onTogglePip,
@@ -64,37 +67,11 @@ export const PlayerControls = memo(function PlayerControls({
   canGoBack,
   engineName,
 }: PlayerControlsProps) {
-  // High-frequency slices: this component re-renders ~4x/second while playing.
-  const currentTime = usePlayerSelector((s) => s.currentTime);
-  const duration = usePlayerSelector((s) => s.duration);
-  const buffered = usePlayerSelector((s) => s.buffered);
-  const status = usePlayerSelector((s) => s.status);
-  const volume = usePlayerSelector((s) => s.volume);
-  const muted = usePlayerSelector((s) => s.muted);
-  const playbackRate = usePlayerSelector((s) => s.playbackRate);
-  const isLive = usePlayerSelector((s) => s.isLive);
-  const liveLatency = usePlayerSelector((s) => s.liveLatency);
-  const isFullscreen = usePlayerSelector((s) => s.fullscreen);
-  const isPip = usePlayerSelector((s) => s.pictureInPicture);
-
-  // Low-frequency slices.
-  const levels = usePlayerSelector((s) => s.levels);
-  const currentLevel = usePlayerSelector((s) => s.currentLevel);
-  const autoLevel = usePlayerSelector((s) => s.autoLevelEnabled);
-  const audioTracks = usePlayerSelector((s) => s.audioTracks);
-  const currentAudioTrack = usePlayerSelector((s) => s.currentAudioTrack);
-  const subtitleTracks = usePlayerSelector((s) => s.subtitleTracks);
-  const currentSubtitleTrack = usePlayerSelector((s) => s.currentSubtitleTrack);
-  const subtitlesEnabled = usePlayerSelector((s) => s.subtitlesEnabled);
-
-  const [menu, setMenu] = useState<'none' | 'quality' | 'audio' | 'subs' | 'speed'>('none');
+  const [menu, setMenu] = useState<'none' | 'speed'>('none');
   const barRef = useRef<HTMLDivElement>(null);
+  const isLive = item.kind === 'live';
+  const isFullscreen = false; // Not tracked in simple mode
 
-  // The bar is a horizontal strip of controls, which is exactly the row shape
-  // the spatial D-pad already understands, so it needs no bespoke key handling —
-  // only the `data-nav` stops below and a container to scope them to. `loop` is
-  // off because a control bar that wraps from "fullscreen" back to "play" is
-  // disorienting; running off the end falls through to the page instead.
   useDpadNavigation(barRef, { loop: false });
 
   const closeMenu = useCallback(() => setMenu('none'), []);
@@ -102,29 +79,8 @@ export const PlayerControls = memo(function PlayerControls({
   const seekingDisabled = isLive;
 
   const durationLabel = isLive ? 'LIVE' : formatTime(duration);
-  const positionLabel = isLive
-    ? liveLatency > 1
-      ? `${Math.round(liveLatency)}s behind`
-      : 'At the edge'
-    : formatTime(currentTime);
+  const positionLabel = isLive ? 'At the edge' : formatTime(currentTime);
 
-  // `levels`, `audioTracks` and `subtitleTracks` are all *reordered or filtered*
-  // before they reach the store, while the current selection is an index into
-  // the engine's own list. So every lookup has to match on the stored `index`/
-  // `id` — indexing the array by it silently shows the wrong label once the
-  // lists are sorted or an entry is skipped.
-  const activeQualityLabel = autoLevel
-    ? `Auto${levels.length > 0 ? ` (${levels.find((l) => l.index === currentLevel)?.label ?? levels[0].label})` : ''}`
-    : (levels.find((l) => l.index === currentLevel)?.label ?? 'Auto');
-
-  const activeAudioLabel =
-    audioTracks.find((t) => t.id === currentAudioTrack)?.label ?? 'Default';
-
-  const activeSubtitleLabel =
-    subtitleTracks.find((t) => t.id === currentSubtitleTrack)?.label ?? 'On';
-
-  // A live channel's "title" is a channel name, so this resolves to nothing for
-  // live streams and the badge simply never appears.
   const itemRating = useItemRating({ kind: item.kind, title: item.name });
 
   const volumeIcon: IconName = muted || volume === 0 ? 'volume-mute' : volume < 0.5 ? 'volume-low' : 'volume-high';
@@ -150,8 +106,6 @@ export const PlayerControls = memo(function PlayerControls({
           <div className="min-w-0">
             <p className="flex items-center gap-2 text-sm font-semibold text-white sm:text-base">
               <span className="truncate">{cleanTitle(item.name) || item.name}</span>
-              {/* Resolved lazily: the rating needs the title matched to a work
-                  first, so it lands a beat after playback starts. */}
               <RatingBadge rating={itemRating} className="shrink-0" />
             </p>
             <p className="truncate text-[11px] text-white/60">
@@ -172,8 +126,7 @@ export const PlayerControls = memo(function PlayerControls({
           ) : null}
         </div>
 
-        {/* Seek bar. Range input: keyboard accessible, screen-reader labelled,
-            and gives us scrubbing + ARIA for free. */}
+        {/* Seek bar */}
         <div className="group/bar relative flex items-center gap-3">
           <span className="w-14 shrink-0 text-right font-mono text-[11px] tabular-nums text-white/80">
             {positionLabel}
@@ -268,43 +221,6 @@ export const PlayerControls = memo(function PlayerControls({
 
           <div className="flex-1" />
 
-          {/* Quality — only if the manifest declares more than one level. */}
-          {levels.length > 1 ? (
-            <MenuButton
-              icon="settings"
-              label={`Quality: ${activeQualityLabel}`}
-              active={menu === 'quality'}
-              onClick={() => setMenu(menu === 'quality' ? 'none' : 'quality')}
-            />
-          ) : null}
-
-          {/* Audio. Shown as soon as the stream offers at least one alternate
-              rendition, because the "Default" entry (the audio muxed into the
-              video) is itself a choice — a stream with one alternate plus a
-              default has two options, not one. */}
-          {audioTracks.length > 0 ? (
-            <MenuButton
-              icon="audio"
-              label={`Audio: ${activeAudioLabel}`}
-              active={menu === 'audio'}
-              onClick={() => setMenu(menu === 'audio' ? 'none' : 'audio')}
-            />
-          ) : null}
-
-          {/* Subtitles — only when the stream has subtitle tracks. */}
-          {subtitleTracks.length > 0 ? (
-            <MenuButton
-              icon="subtitles"
-              label={
-                subtitlesEnabled
-                  ? `Subtitles: ${activeSubtitleLabel}`
-                  : 'Subtitles off'
-              }
-              active={menu === 'subs' || subtitlesEnabled}
-              onClick={() => setMenu(menu === 'subs' ? 'none' : 'subs')}
-            />
-          ) : null}
-
           <MenuButton
             icon="speed"
             label={`Playback speed: ${playbackRate}x`}
@@ -316,98 +232,21 @@ export const PlayerControls = memo(function PlayerControls({
           {pipSupported ? (
             <ControlButton
               icon="pip"
-              label={isPip ? 'Exit picture-in-picture' : 'Picture-in-picture'}
+              label="Picture-in-picture"
               onClick={onTogglePip}
-              active={isPip}
               className="hidden sm:flex"
             />
           ) : null}
 
           <ControlButton
             icon={isFullscreen ? 'fullscreen-exit' : 'fullscreen'}
-            label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            label="Fullscreen"
             onClick={onToggleFullscreen}
           />
         </div>
       </div>
 
       {/* Menus */}
-      {menu === 'quality' && levels.length > 0 ? (
-        <PlayerMenu label="Quality" onClose={closeMenu}>
-          <MenuItem
-            label="Auto"
-            active={autoLevel}
-            onClick={() => {
-              onLevel(-1);
-              closeMenu();
-            }}
-          />
-          {levels.map((level) => (
-            <MenuItem
-              key={level.index}
-              label={level.label}
-              hint={level.bitrate ? `${Math.round(level.bitrate / 1000)} kbps` : undefined}
-              active={!autoLevel && currentLevel === level.index}
-              onClick={() => {
-                onLevel(level.index);
-                closeMenu();
-              }}
-            />
-          ))}
-        </PlayerMenu>
-      ) : null}
-
-      {menu === 'audio' && audioTracks.length > 0 ? (
-        <PlayerMenu label="Audio" onClose={closeMenu}>
-          {/* -1 is the audio muxed into the video renditions. Without this there
-              is no way back to it once an alternate has been chosen. */}
-          <MenuItem
-            label="Default"
-            active={currentAudioTrack < 0}
-            onClick={() => {
-              onAudioTrack(-1);
-              closeMenu();
-            }}
-          />
-          {audioTracks.map((track) => (
-            <MenuItem
-              key={track.id}
-              label={track.label}
-              hint={track.lang && track.lang !== track.label ? track.lang : undefined}
-              active={currentAudioTrack === track.id}
-              onClick={() => {
-                onAudioTrack(track.id);
-                closeMenu();
-              }}
-            />
-          ))}
-        </PlayerMenu>
-      ) : null}
-
-      {menu === 'subs' && subtitleTracks.length > 0 ? (
-        <PlayerMenu label="Subtitles" onClose={closeMenu}>
-          <MenuItem
-            label="Off"
-            active={!subtitlesEnabled}
-            onClick={() => {
-              onSubtitleTrack(-1);
-              closeMenu();
-            }}
-          />
-          {subtitleTracks.map((track) => (
-            <MenuItem
-              key={track.id}
-              label={track.label}
-              active={subtitlesEnabled && currentSubtitleTrack === track.id}
-              onClick={() => {
-                onSubtitleTrack(track.id);
-                closeMenu();
-              }}
-            />
-          ))}
-        </PlayerMenu>
-      ) : null}
-
       {menu === 'speed' ? (
         <PlayerMenu label="Playback speed" onClose={closeMenu}>
           {RATES.map((rate) => (
@@ -508,15 +347,8 @@ function PlayerMenu({
 }) {
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // A menu is a vertical list, so it gets its own D-pad container: Up/Down step
-  // through the items. It is nested inside the control bar's container, and
-  // because keydown bubbles from the inside out, the menu resolves a press
-  // first and the bar only sees what the menu could not handle.
   useDpadNavigation(menuRef, { loop: false });
 
-  // Opening a menu has to land focus inside it. Without this the OK button
-  // would open a list the remote then cannot reach, since the trigger keeps
-  // focus and the menu is rendered as a sibling overlay.
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       navCandidates(menuRef.current ?? document)[0]?.focus();
