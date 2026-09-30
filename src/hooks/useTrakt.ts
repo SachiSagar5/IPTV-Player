@@ -24,7 +24,8 @@ export function useTraktAuth() {
     setIsLoading(false);
   }, []);
 
-  const connect = useCallback(() => {
+  const connect = useCallback((e?: React.MouseEvent) => {
+    e?.preventDefault();
     localStorage.setItem(TRAKT_REDIRECT_KEY, window.location.pathname + window.location.search);
     window.location.href = '/api/trakt/auth';
   }, []);
