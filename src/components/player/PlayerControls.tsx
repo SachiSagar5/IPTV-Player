@@ -35,6 +35,7 @@ export interface PlayerControlsProps {
   onToggleMute: () => void;
   onRate: (rate: number) => void;
   onLevel: (index: number) => void;
+  onAudioTrack: (index: number) => void;
   onFitMode: () => void;
   onBack: () => void;
   onToggleFullscreen: () => void;
@@ -45,6 +46,8 @@ export interface PlayerControlsProps {
   levels: Array<{ index: number; label: string; height: number; bitrate: number }>;
   currentLevel: number;
   autoLevelEnabled: boolean;
+  audioTracks: Array<{ id: number; label: string; lang: string }>;
+  currentAudioTrack: number;
 }
 
 const RATES = [0.5, 0.75, 1, 1.25, 1.5, 2];
@@ -66,6 +69,7 @@ export const PlayerControls = memo(function PlayerControls({
   onToggleMute,
   onRate,
   onLevel,
+  onAudioTrack,
   onFitMode,
   onBack,
   onToggleFullscreen,
@@ -76,8 +80,10 @@ export const PlayerControls = memo(function PlayerControls({
   levels,
   currentLevel,
   autoLevelEnabled,
+  audioTracks,
+  currentAudioTrack,
 }: PlayerControlsProps) {
-  const [menu, setMenu] = useState<'none' | 'quality' | 'speed'>('none');
+  const [menu, setMenu] = useState<'none' | 'quality' | 'audio' | 'speed'>('none');
   const barRef = useRef<HTMLDivElement>(null);
   const isLive = item.kind === 'live';
   const isFullscreen = false;
@@ -94,6 +100,8 @@ export const PlayerControls = memo(function PlayerControls({
   const activeQualityLabel = autoLevelEnabled
     ? `Auto${levels.length > 0 ? ` (${levels.find((l) => l.index === currentLevel)?.label ?? levels[0].label})` : ''}`
     : (levels.find((l) => l.index === currentLevel)?.label ?? 'Auto');
+
+  const activeAudioLabel = audioTracks.find((t) => t.id === currentAudioTrack)?.label ?? 'Default';
 
   const itemRating = useItemRating({ kind: item.kind, title: item.name });
 
@@ -244,6 +252,15 @@ export const PlayerControls = memo(function PlayerControls({
             />
           ) : null}
 
+          {audioTracks.length > 0 ? (
+            <MenuButton
+              icon="audio"
+              label={`Audio: ${activeAudioLabel}`}
+              active={menu === 'audio'}
+              onClick={() => setMenu(menu === 'audio' ? 'none' : 'audio')}
+            />
+          ) : null}
+
           <ControlButton
             icon="maximize-2"
             label="Fit mode"
@@ -295,6 +312,30 @@ export const PlayerControls = memo(function PlayerControls({
               active={!autoLevelEnabled && currentLevel === level.index}
               onClick={() => {
                 onLevel(level.index);
+                closeMenu();
+              }}
+            />
+          ))}
+        </PlayerMenu>
+      ) : null}
+      {menu === 'audio' && audioTracks.length > 0 ? (
+        <PlayerMenu label="Audio" onClose={closeMenu}>
+          <MenuItem
+            label="Default"
+            active={currentAudioTrack < 0}
+            onClick={() => {
+              onAudioTrack(-1);
+              closeMenu();
+            }}
+          />
+          {audioTracks.map((track) => (
+            <MenuItem
+              key={track.id}
+              label={track.label}
+              hint={track.lang && track.lang !== track.label ? track.lang : undefined}
+              active={currentAudioTrack === track.id}
+              onClick={() => {
+                onAudioTrack(track.id);
                 closeMenu();
               }}
             />

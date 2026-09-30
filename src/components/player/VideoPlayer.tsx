@@ -84,6 +84,8 @@ export const VideoPlayer = memo(function VideoPlayer({
   const [currentLevel, setCurrentLevel] = useState(-1);
   const [autoLevelEnabled, setAutoLevelEnabled] = useState(true);
   const [fitMode, setFitMode] = useState<'contain' | 'cover' | 'fill' | 'none'>('contain');
+  const [audioTracks, setAudioTracks] = useState<Array<{ id: number; label: string; lang: string }>>([]);
+  const [currentAudioTrack, setCurrentAudioTrack] = useState(-1);
   const playableUrl = getPlayableUrl(item.streams[0]?.url ?? '');
   const resumeRef = useRef(startPosition);
 
@@ -141,6 +143,11 @@ export const VideoPlayer = memo(function VideoPlayer({
     setAutoLevelEnabled(index < 0);
   }, []);
 
+  const setAudioTrack = useCallback((index: number) => {
+    engineRef.current?.setAudioTrack(index);
+    setCurrentAudioTrack(index);
+  }, []);
+
   const retry = useCallback(() => {
     const media = mediaRef.current;
     if (!media || !playableUrl) return;
@@ -194,8 +201,12 @@ export const VideoPlayer = memo(function VideoPlayer({
       onLevelChange: (index) => {
         setCurrentLevel(index);
       },
-      onAudioTracks: () => {},
-      onAudioTrackChange: () => {},
+      onAudioTracks: (tracks) => {
+        setAudioTracks(tracks);
+      },
+      onAudioTrackChange: (index) => {
+        setCurrentAudioTrack(index);
+      },
       onSubtitleTracks: () => {},
       onFatalError: (err) => {
         setError(err);
@@ -386,6 +397,7 @@ export const VideoPlayer = memo(function VideoPlayer({
           onToggleMute={toggleMute}
           onRate={setRate}
           onLevel={setLevel}
+          onAudioTrack={setAudioTrack}
           onFitMode={cycleFitMode}
           onBack={exit}
           onToggleFullscreen={fullscreen.toggle}
@@ -396,6 +408,8 @@ export const VideoPlayer = memo(function VideoPlayer({
           levels={levels}
           currentLevel={currentLevel}
           autoLevelEnabled={autoLevelEnabled}
+          audioTracks={audioTracks}
+          currentAudioTrack={currentAudioTrack}
         />
 
         {status === 'idle' ? (
