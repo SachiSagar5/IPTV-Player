@@ -17,6 +17,7 @@ import { RatingBadge } from '@/components/common/RatingBadge';
 import { useItemRating } from '@/hooks/useRating';
 import { useDpadNavigation } from '@/hooks/useDpadNavigation';
 import { navCandidates } from '@/hooks/navCandidates';
+import type { StreamFeatures } from '@/services/hls/nativeSupport';
 
 export interface PlayerControlsProps {
   visible: boolean;
@@ -48,6 +49,7 @@ export interface PlayerControlsProps {
   autoLevelEnabled: boolean;
   audioTracks: Array<{ id: number; label: string; lang: string }>;
   currentAudioTrack: number;
+  streamFeatures: StreamFeatures;
 }
 
 const RATES = [0.5, 0.75, 1, 1.25, 1.5, 2];
@@ -82,6 +84,7 @@ export const PlayerControls = memo(function PlayerControls({
   autoLevelEnabled,
   audioTracks,
   currentAudioTrack,
+  streamFeatures,
 }: PlayerControlsProps) {
   const [menu, setMenu] = useState<'none' | 'quality' | 'audio' | 'speed'>('none');
   const barRef = useRef<HTMLDivElement>(null);
@@ -134,6 +137,26 @@ export const PlayerControls = memo(function PlayerControls({
               {item.group ? `${item.group} · ` : ''}
               {engineName === 'native' ? 'Native HLS' : engineName === 'hls.js' ? 'HLS.js' : 'Direct'}
             </p>
+            {/* Stream feature badges (HDR/Dolby/Codec/Resolution) */}
+            {(streamFeatures.hdr !== 'none' ||
+              streamFeatures.dolby !== 'none' ||
+              streamFeatures.codec !== 'none' ||
+              streamFeatures.resolution !== 'unknown') ? (
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                {streamFeatures.resolution !== 'unknown' ? (
+                  <Badge variant="resolution">{streamFeatures.resolution.toUpperCase()}</Badge>
+                ) : null}
+                {streamFeatures.hdr !== 'none' ? (
+                  <Badge variant="hdr">{streamFeatures.hdr.toUpperCase()}</Badge>
+                ) : null}
+                {streamFeatures.dolby !== 'none' ? (
+                  <Badge variant="dolby">{streamFeatures.dolby.replace('-', ' ').toUpperCase()}</Badge>
+                ) : null}
+                {streamFeatures.codec !== 'none' ? (
+                  <Badge variant="codec">{streamFeatures.codec.toUpperCase()}</Badge>
+                ) : null}
+              </div>
+            ) : null}
           </div>
           {canGoBack ? (
             <button
@@ -469,6 +492,31 @@ function PlayerMenu({
       </p>
       {children}
     </div>
+  );
+}
+
+function Badge({
+  children,
+  variant,
+}: {
+  children: React.ReactNode;
+  variant: 'hdr' | 'dolby' | 'codec' | 'resolution';
+}) {
+  const variantStyles: Record<string, string> = {
+    hdr: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    dolby: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    codec: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+    resolution: 'bg-green-500/20 text-green-400 border-green-500/30',
+  };
+
+  return (
+    <span
+      className={`inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold tracking-[0.1em] uppercase rounded border ${
+        variantStyles[variant] ?? variantStyles.hdr
+      }`}
+    >
+      {children}
+    </span>
   );
 }
 

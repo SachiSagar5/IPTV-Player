@@ -22,9 +22,11 @@ import type {
 } from 'hls.js';
 import {
   classifyStream,
+  detectStreamFeatures,
   isNativeHlsSupported,
   sniffStreamShape,
   type SniffedShape,
+  type StreamFeatures,
   type StreamShape,
 } from './nativeSupport';
 import type { StreamSource } from '@/types';
@@ -70,6 +72,7 @@ export interface HlsEngineEvents {
   onSubtitleTracks: (tracks: SubtitleTrackInfo[]) => void;
   onFatalError: (error: PlayerErrorInfo) => void;
   onRecovered: () => void;
+  onFeaturesDetected: (features: StreamFeatures) => void;
 }
 
 const MAX_RECOVERY_ATTEMPTS = 3;
@@ -171,6 +174,13 @@ export class HlsEngine {
   private nativeTrackCleanup: (() => void) | null = null;
   /** Resume position handed to us at load time, consumed once playback starts. */
   private pendingSeek = 0;
+  /** Current stream features (HDR/Dolby/codec/resolution). */
+  private features: StreamFeatures = {
+    hdr: 'none',
+    dolby: 'none',
+    codec: 'none',
+    resolution: 'unknown',
+  };
   /**
    * Monotonic token guarding the async hls.js load. A user who skips three
    * channels in two seconds would otherwise get three live `Hls` instances
@@ -187,6 +197,10 @@ export class HlsEngine {
     if (this.usingProgressive) return 'progressive';
     if (this.usingNative) return 'native';
     return 'none';
+  }
+
+  get streamFeatures(): StreamFeatures {
+    return this.features;
   }
 
   attach(video: HTMLVideoElement): void {
@@ -206,6 +220,12 @@ export class HlsEngine {
     this.usingProgressive = false;
     this.recoveryAttempts = 0;
     this.pendingSeek = 0;
+    this.features = {
+      hdr: 'none',
+      dolby: 'none',
+      codec: 'none',
+      resolution: 'unknown',
+    };
   }
 
   load(source: StreamSource, options: { defaultLevel: number; startPosition: number }): void {
@@ -335,6 +355,10 @@ export class HlsEngine {
       };
       video.addEventListener('loadedmetadata', onLoaded);
     }
+
+    // Detect stream features for HDR/Dolby/codec badges
+    void this.detectFeatures(source.url);
+
     // Native HLS exposes tracks through the media element, not hls.js.
     //
     // Safari populates `audioTracks` only *after* the manifest has been parsed,
@@ -623,7 +647,7 @@ export class HlsEngine {
   }
 
   destroy(): void {
-    this.destroyed = true;
+this.destroyed = true;
     this.loadToken += 1;
     this.teardown();
     this.source = null;
@@ -635,7 +659,22 @@ export class HlsEngine {
       onSubtitleTracks: () => {},
       onFatalError: () => {},
       onRecovered: () => {},
+      onFeaturesDetected: () => {},
     };
+  }
+
+  /**
+   * Detect HDR/Dolby/codec/resolution features from the stream.
+   * Called once per load for HLS streams (both hls.js and native paths).
+   */
+  private async detectFeatures(manifestUrl: string): Promise<void> {
+    try {
+      const features = await detectStreamFeatures(manifestUrl);
+      this.features = features;
+      this.events.onFeaturesDetected(features);
+    } catch {
+      // Features are best-effort; never fail the load
+    }
   }
 }
 

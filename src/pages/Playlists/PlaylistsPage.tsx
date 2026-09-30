@@ -21,6 +21,7 @@ import { useDpadNavigation } from '@/hooks/useDpadNavigation';
 import { usePersistentState } from '@/hooks/useMedia';
 import {
   deletePlaylist,
+  exportPlaylistM3U,
   refreshPlaylist,
   renamePlaylist,
   setDefaultPlaylist,
@@ -260,6 +261,24 @@ export default function PlaylistsPage() {
                         onClick={() => void onRefresh(playlist)}
                         disabled={isBusy}
                         active={isThisBusy}
+                      />
+                      <IconButton
+                        icon="download"
+                        label={`Export ${playlist.name} as M3U`}
+                        size="sm"
+                        data-nav
+                        onClick={() => {
+                          const m3u = exportPlaylistM3U();
+                          if (!m3u) return;
+                          const blob = new Blob([m3u], { type: 'audio/x-mpegurl' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `${playlist.name.replace(/[^a-z0-9]/gi, '_')}.m3u`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                        disabled={isBusy || playlist.itemCount === 0}
                       />
                       <IconButton
                         icon="edit"

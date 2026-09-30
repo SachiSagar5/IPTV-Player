@@ -217,6 +217,9 @@ export const VideoPlayer = memo(function VideoPlayer({
         setError(null);
         setStatus('playing');
       },
+      onFeaturesDetected: (_features) => {
+        // Features are read from engineRef.current.streamFeatures in render
+      },
     });
 
     engine.attach(media);
@@ -410,6 +413,12 @@ export const VideoPlayer = memo(function VideoPlayer({
           autoLevelEnabled={autoLevelEnabled}
           audioTracks={audioTracks}
           currentAudioTrack={currentAudioTrack}
+          streamFeatures={engineRef.current?.streamFeatures ?? {
+            hdr: 'none',
+            dolby: 'none',
+            codec: 'none',
+            resolution: 'unknown',
+          }}
         />
 
         {status === 'idle' ? (

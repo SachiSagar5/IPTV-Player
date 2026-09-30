@@ -953,6 +953,61 @@ export function getItem(contentId: string | undefined): ContentItem | undefined 
   return state.itemById.get(contentId) ?? state.parentItemById.get(contentId);
 }
 
+/* ------------------------------------------------------------------ *
+ * M3U Export
+ * ------------------------------------------------------------------ */
+
+/** Export the active playlist as an M3U string. */
+export function exportPlaylistM3U(): string {
+  const state = appStore.getState();
+  const activeId = state.activePlaylistId;
+  if (!activeId) return '';
+
+  const meta = state.playlists.find((p) => p.id === activeId);
+  if (!meta) return '';
+
+  // Build items for the active playlist
+  const items = state.items;
+  if (items.length === 0) return '#EXTM3U\n# Empty playlist';
+
+  const lines: string[] = ['#EXTM3U'];
+  lines.push(`# Playlist: ${meta.name}`);
+  lines.push(`# Generated: ${new Date().toISOString()}`);
+  lines.push(`# Item count: ${items.length}`);
+
+  for (const item of items) {
+    if (!item.streams || item.streams.length === 0) continue;
+
+    const stream = item.streams[0];
+    if (!stream.url) continue;
+
+    const attrs: string[] = [];
+
+    if (item.tvgId) attrs.push(`tvg-id="${escapeAttr(item.tvgId)}"`);
+    if (item.logo) attrs.push(`tvg-logo="${escapeAttr(item.logo)}"`);
+    if (item.group) attrs.push(`group-title="${escapeAttr(item.group)}"`);
+    if (item.language) attrs.push(`tvg-language="${escapeAttr(item.language)}"`);
+    if (item.country) attrs.push(`tvg-country="${escapeAttr(item.country)}"`);
+
+    const attrStr = attrs.length > 0 ? ' ' + attrs.join(' ') : '';
+    const name = escapeName(item.name);
+    const url = stream.url;
+
+    lines.push(`#EXTINF:-1${attrStr},${name}`);
+    lines.push(url);
+  }
+
+  return lines.join('\n');
+}
+
+function escapeAttr(value: string): string {
+  return value.replace(/"/g, '\\"');
+}
+
+function escapeName(value: string): string {
+  return value.replace(/,/g, '\\,').replace(/\n/g, ' ').trim();
+}
+
 /** True when the entry lives in the reserved Parent playlist rather than the active one. */
 export function isParentItem(item: ContentItem): boolean {
   const state = appStore.getState();
