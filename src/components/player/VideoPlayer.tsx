@@ -83,6 +83,7 @@ export const VideoPlayer = memo(function VideoPlayer({
   const [levels, setLevels] = useState<Array<{ index: number; label: string; height: number; bitrate: number }>>([]);
   const [currentLevel, setCurrentLevel] = useState(-1);
   const [autoLevelEnabled, setAutoLevelEnabled] = useState(true);
+  const [fitMode, setFitMode] = useState<'contain' | 'cover' | 'fill' | 'none'>('contain');
   const playableUrl = getPlayableUrl(item.streams[0]?.url ?? '');
   const resumeRef = useRef(startPosition);
 
@@ -154,6 +155,14 @@ export const VideoPlayer = memo(function VideoPlayer({
     else navigate(-1);
   }, [fullscreen, onBack, navigate]);
 
+  const cycleFitMode = useCallback(() => {
+    setFitMode((current) => {
+      const modes: Array<'contain' | 'cover' | 'fill' | 'none'> = ['contain', 'cover', 'fill', 'none'];
+      const idx = modes.indexOf(current);
+      return modes[(idx + 1) % modes.length];
+    });
+  }, []);
+
   const { showControls, hideControls } = usePlayerKeys({
     onTogglePlay: togglePlay,
     onSeekBy: seekBy,
@@ -168,6 +177,7 @@ export const VideoPlayer = memo(function VideoPlayer({
     onToggleFullscreen: fullscreen.toggle,
     onTogglePip: pip.toggle,
     onBack: exit,
+    onCycleFitMode: cycleFitMode,
     setControlsVisible,
   });
 
@@ -344,7 +354,8 @@ export const VideoPlayer = memo(function VideoPlayer({
       >
         <video
           ref={mediaRef}
-          className="h-full max-h-[100dvh] w-full bg-black object-contain"
+          className="h-full max-h-[100dvh] w-full bg-black"
+          style={{ objectFit: fitMode }}
           playsInline
           controls={false}
           preload="auto"
@@ -375,6 +386,7 @@ export const VideoPlayer = memo(function VideoPlayer({
           onToggleMute={toggleMute}
           onRate={setRate}
           onLevel={setLevel}
+          onFitMode={cycleFitMode}
           onBack={exit}
           onToggleFullscreen={fullscreen.toggle}
           onTogglePip={pip.toggle}

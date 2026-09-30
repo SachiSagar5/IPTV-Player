@@ -35,6 +35,7 @@ export interface PlayerControlsProps {
   onToggleMute: () => void;
   onRate: (rate: number) => void;
   onLevel: (index: number) => void;
+  onFitMode: () => void;
   onBack: () => void;
   onToggleFullscreen: () => void;
   onTogglePip: () => void;
@@ -65,6 +66,7 @@ export const PlayerControls = memo(function PlayerControls({
   onToggleMute,
   onRate,
   onLevel,
+  onFitMode,
   onBack,
   onToggleFullscreen,
   onTogglePip,
@@ -241,6 +243,13 @@ export const PlayerControls = memo(function PlayerControls({
               onClick={() => setMenu(menu === 'quality' ? 'none' : 'quality')}
             />
           ) : null}
+
+          <ControlButton
+            icon="maximize-2"
+            label="Fit mode"
+            onClick={onFitMode}
+            className="hidden sm:flex"
+          />
 
           <MenuButton
             icon="speed"

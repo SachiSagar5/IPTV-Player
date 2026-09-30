@@ -38,6 +38,7 @@ export interface PlayerKeyHandlers {
   onToggleFullscreen: () => void;
   onTogglePip: () => void;
   onBack: () => void;
+  onCycleFitMode: () => void;
   setControlsVisible: (visible: boolean) => void;
 }
 
@@ -140,6 +141,11 @@ export function usePlayerKeys(handlers: Partial<PlayerKeyHandlers> = {}): UsePla
         case 'V':
           event.preventDefault();
           h.onCycleSubtitles?.();
+          break;
+        case 'z':
+        case 'Z':
+          event.preventDefault();
+          h.onCycleFitMode?.();
           break;
         case ',':
         case '<':
