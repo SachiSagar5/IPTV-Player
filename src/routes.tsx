@@ -25,6 +25,7 @@ const PlaylistsPage = lazy(() => import('@/pages/Playlists/PlaylistsPage'));
 const SettingsPage = lazy(() => import('@/pages/Settings/SettingsPage'));
 const PlayerPage = lazy(() => import('@/pages/Player/PlayerPage'));
 const AdultPage = lazy(() => import('@/pages/Adult/AdultPage'));
+const TraktCallback = lazy(() => import('@/pages/Auth/TraktCallback'));
 
 /**
  * The Parent route is derived from `ROUTES` rather than written as a literal.
@@ -49,6 +50,7 @@ export const routes: RouteObject[] = [
       { path: 'playlists', element: <PlaylistsPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: PARENT_PATH, element: <AdultPage /> },
+      { path: 'auth/trakt/callback', element: <TraktCallback /> },
       // Player routes keep the shell but drop the nav chrome (see AppLayout).
       { path: 'watch/:contentId', element: <PlayerPage /> },
       { path: 'watch/series/:seriesId', element: <PlayerPage /> },

@@ -31,6 +31,7 @@ import {
 } from '@/services/storage/prefs';
 import { hashPin, validatePin } from '@/utils/pin';
 import { lockAdult } from '@/store/adultGate';
+import { useTraktAuth, useTraktSync } from '@/hooks/useTrakt';
 
 export default function SettingsPage() {
   const settings = useAppSelector((s) => s.settings);
@@ -49,6 +50,9 @@ export default function SettingsPage() {
   // Whether a PIN of the parent's own choosing has replaced the default. Read from
   // storage rather than kept as state so it stays correct across reloads.
   const [customPin, setCustomPin] = useState(() => Boolean(loadAdultPinHash()));
+
+  const { isConnected, isLoading: traktLoading, connect, disconnect } = useTraktAuth();
+  const { isSyncing, lastSync, error: traktError, syncWatched } = useTraktSync();
 
   useDpadNavigation(rootRef, { loop: false });
 
@@ -263,6 +267,93 @@ export default function SettingsPage() {
               }
             />
           </Row>
+        </div>
+      </Section>
+
+      {/* Trakt.tv Integration */}
+      <Section
+        title="Trakt.tv"
+        description="Sync watch history, get recommendations, and continue watching across devices."
+      >
+        <div className="divide-y divide-ink-700">
+          {traktLoading ? (
+            <Row>
+              <div className="flex items-center gap-2">
+                <div className="animate-spin h-4 w-4 border-2 border-accent-400 border-t-transparent rounded-full" />
+                <span className="text-sm text-mist-400">Checking connection...</span>
+              </div>
+            </Row>
+          ) : isConnected ? (
+            <>
+              <Row>
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/15 text-purple-400">
+                    <Icon name="tv" size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-mist-50">Connected to Trakt</p>
+                    <p className="truncate text-[11px] text-mist-500">
+                      {lastSync ? `Last synced ${new Date(lastSync).toLocaleString()}` : 'Not synced yet'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    data-nav
+                    onClick={disconnect}
+                    disabled={isSyncing}
+                  >
+                    Disconnect
+                  </Button>
+                </div>
+              </Row>
+              <Row>
+                <SettingRow
+                  label="Sync watch history"
+                  description="Pull watched episodes/movies from Trakt to resume here, and push local progress to Trakt."
+                  control={
+                    <Button
+                      variant={isSyncing ? 'secondary' : 'primary'}
+                      size="sm"
+                      data-nav
+                      onClick={() => syncWatched('pull')}
+                      disabled={isSyncing}
+                    >
+                      {isSyncing ? 'Syncing...' : 'Sync now'}
+                    </Button>
+                  }
+                />
+              </Row>
+              {lastSync ? (
+                <Row>
+                  <SettingRow
+                    label="Last sync"
+                    description={new Date(lastSync).toLocaleString()}
+                    control={<span />}
+                  />
+                </Row>
+              ) : null}
+              {traktError ? (
+                <Row>
+                  <InlineBanner tone="error" message={traktError} onDismiss={() => {}} />
+                </Row>
+              ) : null}
+            </>
+          ) : (
+            <Row>
+              <SettingRow
+                label="Connect to Trakt.tv"
+                description="Sync your watch history and get personalized recommendations."
+                control={
+                  <Button variant="primary" size="sm" data-nav onClick={connect} disabled={traktLoading}>
+                    {traktLoading ? 'Connecting...' : 'Connect'}
+                  </Button>
+                }
+              />
+            </Row>
+          )}
         </div>
       </Section>
 
