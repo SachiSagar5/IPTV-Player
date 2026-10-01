@@ -20,13 +20,13 @@ import { VideoPlayer } from '@/components/player/VideoPlayer';
 import { ContentCard } from '@/components/cards/ContentCard';
 import { EmptyState } from '@/components/common/States';
 import { ButtonLink } from '@/components/common/Button';
-import { Icon } from '@/components/common/Icon';
+
 import { useAppSelector, clearProgress, saveProgress } from '@/store/appStore';
 import { useAdultUnlocked } from '@/store/adultGate';
 import { formatTime } from '@/utils/format';
 import { parseWatchParam, seriesPath, watchPath, ROUTES } from '@/utils/routes';
 import type { ContentItem } from '@/types';
-import { useContinueWatchingRecommendations, useSimilarRecommendations } from '@/hooks/useRecommendations';
+import { useSimilarRecommendations } from '@/hooks/useRecommendations';
 
 export default function PlayerPage() {
   const { contentId, seriesId } = useParams();
@@ -111,7 +111,6 @@ export default function PlayerPage() {
   }, [item, progressById]);
 
   // Recommendations
-  const continueRecs = useContinueWatchingRecommendations({ limit: 8 });
   const similarRecs = useSimilarRecommendations(item, { limit: 6 });
 
   const onBack = useCallback(() => {
@@ -232,28 +231,6 @@ export default function PlayerPage() {
             </h2>
             <div className="row-scroll flex gap-2.5 overflow-x-auto pb-1">
               {similarRecs.map((rec) => (
-                <ContentCard
-                  key={rec.item.id}
-                  item={rec.item}
-                  variant="wide"
-                  progress={progressById.get(rec.item.id)}
-                  favorite={favoriteIds.has(rec.item.id)}
-                  showEpisodeMeta
-                />
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        {/* "Because you watched..." recommendations based on watch history */}
-        {continueRecs.length > 0 ? (
-          <div className="mt-8">
-            <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold tracking-[0.12em] text-mist-500 uppercase">
-              <Icon name="clock" size={11} className="text-accent-400" />
-              Because you watched...
-            </h2>
-            <div className="row-scroll flex gap-2.5 overflow-x-auto pb-1">
-              {continueRecs.map((rec) => (
                 <ContentCard
                   key={rec.item.id}
                   item={rec.item}
