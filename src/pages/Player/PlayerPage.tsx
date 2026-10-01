@@ -14,12 +14,13 @@
  * until the PIN has been entered, so a hand-typed `/watch/...` link is no way
  * around the gate.
  */
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { VideoPlayer } from '@/components/player/VideoPlayer';
 import { ContentCard } from '@/components/cards/ContentCard';
 import { EmptyState } from '@/components/common/States';
 import { ButtonLink } from '@/components/common/Button';
+import { Icon } from '@/components/common/Icon';
 
 import { useAppSelector, clearProgress, saveProgress } from '@/store/appStore';
 import { useAdultUnlocked } from '@/store/adultGate';
@@ -163,6 +164,23 @@ export default function PlayerPage() {
       ? `${formatTime(Math.max(0, (progressById.get(item.id)?.duration ?? 0) - startPosition))} left`
       : '';
 
+  // Streamable link state
+  const [copyToast, setCopyToast] = useState(false);
+
+  const copyStreamUrl = useCallback(() => {
+    const streamUrl = item.streams?.[0]?.url;
+    if (!streamUrl) return;
+    navigator.clipboard.writeText(streamUrl);
+    setCopyToast(true);
+    setTimeout(() => setCopyToast(false), 2000);
+  }, [item]);
+
+  const openInExternalPlayer = useCallback(() => {
+    const streamUrl = item.streams?.[0]?.url;
+    if (!streamUrl) return;
+    window.open(streamUrl, '_blank', 'noopener,noreferrer');
+  }, [item]);
+
   return (
     <VideoPlayer
       item={item}
@@ -243,6 +261,40 @@ export default function PlayerPage() {
             </div>
           </div>
         ) : null}
+      </section>
+
+      {/* Streamable link - open in external player */}
+      <section className="px-4 py-5 md:px-8 border-t border-ink-800">
+        <h2 className="mb-3 text-xs font-semibold tracking-[0.12em] text-mist-500 uppercase">
+          Open in external player
+        </h2>
+        <p className="mb-3 text-sm text-mist-500">
+          Open the stream directly in VLC, MX Player, IPTV Smarters, or any other player.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={openInExternalPlayer}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-accent-600 rounded-lg hover:bg-accent-500 transition-colors"
+            aria-label="Open stream in external player"
+          >
+            <Icon name="link" size={16} />
+            <span>Open in external player</span>
+          </button>
+          <button
+            type="button"
+            onClick={copyStreamUrl}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-mist-50 bg-ink-800 rounded-lg border border-ink-700 hover:bg-ink-700 transition-colors"
+            aria-label="Copy stream URL to clipboard"
+          >
+            <Icon name={copyToast ? 'check' : 'link'} size={16} className={copyToast ? 'text-green-400' : 'text-mist-400'} />
+            <span>{copyToast ? 'Copied!' : 'Copy link'}</span>
+          </button>
+        </div>
+        <p className="mt-3 text-xs text-mist-500">
+          <span className="font-medium text-mist-400">Stream URL:</span>{' '}
+          <code className="text-mist-600 break-all bg-ink-900 px-2 py-1 rounded">{item.streams?.[0]?.url ?? 'Unavailable'}</code>
+        </p>
       </section>
     </VideoPlayer>
   );
