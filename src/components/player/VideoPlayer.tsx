@@ -276,7 +276,10 @@ export const VideoPlayer = memo(function VideoPlayer({
     const onWaiting = (): void => {
       if (status !== 'error') setStatus('buffering');
     };
-    const onPlaying = (): void => setStatus('playing');
+    const onPlaying = (): void => {
+      setStatus('playing');
+      showControls();
+    };
     const onVolumeChange = (): void => {
       setVolumeState(media.volume);
       setMutedState(media.muted);
