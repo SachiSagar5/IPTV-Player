@@ -98,6 +98,16 @@ export default defineConfig({
     tailwindcss(),
     ...pwaPlugins,
   ],
+  server: {
+    proxy: {
+      '/api/stream': {
+        target: 'https://iptvplayer-ebon.vercel.app',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/api\/stream/, '/api/stream'),
+      },
+    },
+  },
   worker: {
     format: 'es',
   },

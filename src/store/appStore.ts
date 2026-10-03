@@ -290,10 +290,10 @@ export function getFacets(kind?: ContentItem['kind']): FilterFacets {
 export async function hydrate(): Promise<void> {
   try {
     const [playlists, favorites, progress, recents, liveFailures] = await Promise.all([
-      playlistsRepo.list(),
-      favoritesRepo.list(),
-      progressRepo.list(),
-      recentRepo.list(),
+      playlistsRepo.list().catch((): PlaylistMeta[] => []),
+      favoritesRepo.list().catch((): FavoriteRecord[] => []),
+      progressRepo.list().catch((): PlaybackProgress[] => []),
+      recentRepo.list().catch((): RecentRecord[] => []),
       // Absorbs the failure, so a stream-health problem can never keep the whole
       // app from booting — worst case the channels are simply all visible again.
       liveHealthRepo.list().catch((): LiveHealthRecord[] => []),
