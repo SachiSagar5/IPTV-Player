@@ -97,8 +97,10 @@ export const ContentCard = memo(function ContentCard({
   large = false,
   className = '',
 }: ContentCardProps) {
-  const size = SIZES[variant];
-  const displayTitle = cleanTitle(item.name) || item.name;
+  if (!item || !item.id || !item.name) return null;
+  
+  const size = SIZES[variant] || SIZES.poster;
+  const displayTitle = cleanTitle(item.name) || item.name || 'Unknown';
   const isLive = item.kind === 'live';
 
   // Falls back to a fetched poster when the provider gave us no logo. The hook is

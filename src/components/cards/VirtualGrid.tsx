@@ -139,7 +139,7 @@ export const VirtualGrid = memo(function VirtualGrid({
       >
         {virtualRows.map((virtualRow) => {
           const start = virtualRow.index * columns;
-          const rowItems = items.slice(start, start + columns);
+          const rowItems = items.slice(start, start + columns).filter((item) => item && item.id);
           return (
             <div
               key={virtualRow.key}
@@ -205,7 +205,7 @@ export const SimpleGrid = memo(function SimpleGrid({
       role="list"
       className={`grid gap-3 px-4 md:px-8 ${columnsClass} ${className}`}
     >
-      {items.map((item, i) => (
+      {items.filter((item) => item && item.id).map((item, i) => (
         <div key={item.id} role="listitem" className="min-w-0">
           <ContentCard
             item={item}
