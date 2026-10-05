@@ -109,7 +109,11 @@ export const VirtualGrid = memo(function VirtualGrid({
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
-    onScroll?.(el.scrollTop, el.scrollHeight, el.clientHeight);
+    try {
+      onScroll?.(el.scrollTop, el.scrollHeight, el.clientHeight);
+    } catch {
+      // Ignore callback errors
+    }
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 600) onEndReached?.();
   }, [onEndReached, onScroll]);
 

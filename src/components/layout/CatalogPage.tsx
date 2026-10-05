@@ -84,14 +84,18 @@ export const CatalogPage = memo(function CatalogPage({
   // Track scroll direction to auto-hide header and filters
   const handleGridScroll = useCallback(
     (scrollTop: number) => {
-      if (scrollTop > lastScrollY.current + 10) {
-        // Scrolling down - hide header
-        setHeaderVisible(false);
-      } else if (scrollTop < lastScrollY.current - 10) {
-        // Scrolling up - show header
-        setHeaderVisible(true);
+      try {
+        if (scrollTop > lastScrollY.current + 10) {
+          // Scrolling down - hide header
+          setHeaderVisible(false);
+        } else if (scrollTop < lastScrollY.current - 10) {
+          // Scrolling up - show header
+          setHeaderVisible(true);
+        }
+        lastScrollY.current = scrollTop;
+      } catch {
+        // Ignore scroll handler errors
       }
-      lastScrollY.current = scrollTop;
     },
     [],
   );
