@@ -174,10 +174,16 @@ export const CatalogPage = memo(function CatalogPage({
             className="max-h-[calc(100dvh-13rem)]"
           />
           {limit < result.length ? (
-            <p className="px-4 py-4 text-center text-xs text-mist-500 md:px-8">
-              Showing {formatCount(visible.length)} of {formatCount(result.length)} — scroll to load
-              more
-            </p>
+            <div
+              className={`transition-all duration-300 ease-out ${
+                headerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full pointer-events-none'
+              }`}
+            >
+              <p className="px-4 py-4 text-center text-xs text-mist-500 md:px-8">
+                Showing {formatCount(visible.length)} of {formatCount(result.length)} — scroll to load
+                more
+              </p>
+            </div>
           ) : null}
         </PageSection>
       )}
