@@ -18,8 +18,6 @@ import { useItemRating } from '@/hooks/useRating';
 import { useDpadNavigation } from '@/hooks/useDpadNavigation';
 import { navCandidates } from '@/hooks/navCandidates';
 import type { StreamFeatures } from '@/services/hls/nativeSupport';
-import { introTimestampsRepo } from '@/services/storage/userDataRepo';
-import type { IntroTimestampsRecord } from '@/services/storage/userDataRepo';
 
 export interface PlayerControlsProps {
   visible: boolean;
@@ -89,54 +87,22 @@ export const PlayerControls = memo(function PlayerControls({
   streamFeatures,
 }: PlayerControlsProps) {
   const [menu, setMenu] = useState<'none' | 'quality' | 'audio' | 'speed'>('none');
-  const [introTimestamps, setIntroTimestamps] = useState<IntroTimestampsRecord | null>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const isLive = item.kind === 'live';
   const isFullscreen = false;
 
   useDpadNavigation(barRef, { loop: false });
 
-  // Load intro timestamps for VOD content
-  useEffect(() => {
-    if (!isLive && item.kind !== 'live') {
-      introTimestampsRepo.get(item.id).then(setIntroTimestamps).catch(() => setIntroTimestamps(null));
-    }
-  }, [item.id, isLive]);
-
   const closeMenu = useCallback(() => setMenu('none'), []);
   const isPlaying = status === 'playing' || status === 'buffering';
   const seekingDisabled = isLive;
 
-  const hasIntro = introTimestamps !== null && introTimestamps.introEnd > introTimestamps.introStart;
-  const canSkipIntro = hasIntro && currentTime < introTimestamps!.introEnd;
+  // Show "Skip Intro" for VOD content in first 3 minutes
+  const canSkipIntro = !isLive && currentTime < 180 && duration > 180;
 
   const handleSkipIntro = useCallback(() => {
-    if (introTimestamps && introTimestamps.introEnd > currentTime) {
-      onSeek(introTimestamps.introEnd);
-    }
-  }, [introTimestamps, currentTime, onSeek]);
-
-  const markIntroStart = useCallback((time: number) => {
-    const start = Math.max(0, Math.floor(time));
-    if (introTimestamps) {
-      introTimestampsRepo.save(item, start, introTimestamps.introEnd).then(setIntroTimestamps);
-    } else {
-      introTimestampsRepo.save(item, start, start + 1).then(setIntroTimestamps);
-    }
-  }, [item, introTimestamps]);
-
-  const markIntroEnd = useCallback((time: number) => {
-    const end = Math.max(0, Math.floor(time));
-    if (introTimestamps) {
-      introTimestampsRepo.save(item, introTimestamps.introStart, end).then(setIntroTimestamps);
-    } else {
-      introTimestampsRepo.save(item, 0, end).then(setIntroTimestamps);
-    }
-  }, [item, introTimestamps]);
-
-  const clearIntro = useCallback(() => {
-    introTimestampsRepo.remove(item.id).then(() => setIntroTimestamps(null));
-  }, [item]);
+    onSeek(currentTime + 120); // Skip 2 minutes
+  }, [currentTime, onSeek]);
 
   const durationLabel = isLive ? 'LIVE' : formatTime(duration);
   const positionLabel = isLive ? 'At the edge' : formatTime(currentTime);
@@ -282,7 +248,7 @@ export const PlayerControls = memo(function PlayerControls({
           {canSkipIntro ? (
             <ControlButton
               icon="skip-next"
-              label={`Skip intro (${formatTime(introTimestamps!.introEnd - currentTime)} left)`}
+              label="Skip intro (+2 min)"
               onClick={handleSkipIntro}
             />
           ) : null}
@@ -346,16 +312,6 @@ export const PlayerControls = memo(function PlayerControls({
             onClick={() => setMenu(menu === 'speed' ? 'none' : 'speed')}
             hideLabel
           />
-
-          {!isLive && item.kind !== 'live' ? (
-            <MenuButton
-              icon={hasIntro ? 'check-circle' : 'clock'}
-              label={hasIntro ? 'Intro marked' : 'Mark intro'}
-              active={menu === 'intro'}
-              onClick={() => setMenu(menu === 'intro' ? 'none' : 'intro')}
-              hideLabel
-            />
-          ) : null}
 
           {pipSupported ? (
             <ControlButton
@@ -436,43 +392,6 @@ export const PlayerControls = memo(function PlayerControls({
               }}
             />
           ))}
-        </PlayerMenu>
-      ) : null}
-      {menu === 'intro' && item.kind !== 'live' ? (
-        <PlayerMenu label="Intro skip" onClose={closeMenu}>
-          <MenuItem
-            label={hasIntro ? `Intro: ${formatTime(introTimestamps!.introStart)} – ${formatTime(introTimestamps!.introEnd)}` : 'No intro marked'}
-            hint={hasIntro ? `Duration: ${formatTime(introTimestamps!.introEnd - introTimestamps!.introStart)}` : 'Set start/end while watching'}
-            active={false}
-            onClick={() => {}}
-            disabled
-          />
-          <MenuItem
-            label="Mark intro start (now)"
-            hint="Current position as intro start"
-            onClick={() => {
-              markIntroStart(currentTime);
-              closeMenu();
-            }}
-          />
-          <MenuItem
-            label="Mark intro end (now)"
-            hint="Current position as intro end"
-            onClick={() => {
-              markIntroEnd(currentTime);
-              closeMenu();
-            }}
-          />
-          {hasIntro ? (
-            <MenuItem
-              label="Clear intro timestamps"
-              hint="Remove saved intro for this title"
-              onClick={() => {
-                clearIntro();
-                closeMenu();
-              }}
-            />
-          ) : null}
         </PlayerMenu>
       ) : null}
     </div>

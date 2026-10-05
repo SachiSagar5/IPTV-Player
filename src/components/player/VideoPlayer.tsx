@@ -28,8 +28,6 @@ import {
   useAppSelector,
 } from '@/store/appStore';
 import { formatEpisodeLabel } from '@/utils/format';
-import { introTimestampsRepo } from '@/services/storage/userDataRepo';
-import type { IntroTimestampsRecord } from '@/services/storage/userDataRepo';
 
 const PROXY_ENDPOINT = '/api/stream';
 
@@ -88,7 +86,6 @@ export const VideoPlayer = memo(function VideoPlayer({
   const [fitMode, setFitMode] = useState<'contain' | 'cover' | 'fill' | 'none'>('contain');
   const [audioTracks, setAudioTracks] = useState<Array<{ id: number; label: string; lang: string }>>([]);
   const [currentAudioTrack, setCurrentAudioTrack] = useState(-1);
-  const [introTimestamps, setIntroTimestamps] = useState<IntroTimestampsRecord | null>(null);
   const introSkippedRef = useRef(false);
   const playableUrl = getPlayableUrl(item.streams[0]?.url ?? '');
   const resumeRef = useRef(startPosition);
@@ -230,11 +227,6 @@ export const VideoPlayer = memo(function VideoPlayer({
     engineRef.current = engine;
     setEngineName(engine.engineName);
 
-    // Load intro timestamps for VOD content before attaching event listeners
-    if (item.kind !== 'live') {
-      introTimestampsRepo.get(item.id).then(setIntroTimestamps).catch(() => setIntroTimestamps(null));
-    }
-
     const source = { url: playableUrl };
     engine.load(source, {
       defaultLevel: settings.defaultQuality,
@@ -262,12 +254,10 @@ export const VideoPlayer = memo(function VideoPlayer({
         try { media.currentTime = pending; } catch {}
       }
 
-      // Auto-skip intro if starting from beginning and intro timestamps exist
-      if (introTimestamps && introTimestamps.introEnd > introTimestamps.introStart && pending === 0 && resumeRef.current === 0) {
-        if (media.currentTime < introTimestamps.introEnd) {
-          try { media.currentTime = introTimestamps.introEnd; } catch {}
-          introSkippedRef.current = true;
-        }
+      // Auto-skip 2 minutes if starting from beginning (no resume position)
+      if (pending === 0 && resumeRef.current === 0 && item.kind !== 'live') {
+        try { media.currentTime = 120; } catch {}
+        introSkippedRef.current = true;
       }
 
       void media.play().catch(() => { setStatus('paused'); });
@@ -279,14 +269,6 @@ export const VideoPlayer = memo(function VideoPlayer({
 
     const onTimeUpdate = (): void => {
       setCurrentTime(media.currentTime);
-
-      // Fallback: if intro timestamps loaded after metadata, skip if we're in the intro region
-      if (!introSkippedRef.current && introTimestamps && introTimestamps.introEnd > introTimestamps.introStart) {
-        if (media.currentTime < introTimestamps.introEnd && resumeRef.current === 0) {
-          try { media.currentTime = introTimestamps.introEnd; } catch {}
-          introSkippedRef.current = true;
-        }
-      }
     };
 
     const onProgress = (): void => {
