@@ -65,7 +65,7 @@ export interface VirtualGridProps {
   /** Scrolls to the top when this changes — used on filter changes. */
   resetKey?: string;
   className?: string;
-  onScroll?: (scrollTop: number, scrollHeight: number, clientHeight: number) => void;
+  onScroll?: (scrollTop: number) => void;
 }
 
 export const VirtualGrid = memo(function VirtualGrid({
@@ -75,6 +75,7 @@ export const VirtualGrid = memo(function VirtualGrid({
   favoriteIds,
   onToggleFavorite,
   onEndReached,
+  onScroll,
   resetKey,
   className = '',
 }: VirtualGridProps) {

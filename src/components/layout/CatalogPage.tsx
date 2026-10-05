@@ -69,7 +69,6 @@ export const CatalogPage = memo(function CatalogPage({
   const [params] = useSearchParams();
   const [headerVisible, setHeaderVisible] = useState(true);
   const lastScrollY = useRef(0);
-  const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // A different kind of view (Home → Movies) resets the growth window.
   const scopeKey = `${kind}:${params.toString()}`;
