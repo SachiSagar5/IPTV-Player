@@ -52,14 +52,21 @@ export const useIsTvLike = (): boolean =>
  * Used only to pick a card count, never for layout (CSS handles layout).
  */
 export function useViewportWidth(): number {
-  const [width, setWidth] = useState(() => (typeof window === 'undefined' ? 1280 : window.innerWidth));
+  const [width, setWidth] = useState(() => {
+    if (typeof window === 'undefined') return 1280;
+    const w = window.innerWidth;
+    return typeof w === 'number' && w > 0 ? w : 1280;
+  });
   useEffect(() => {
     let frame = 0;
     const onResize = (): void => {
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
-        setWidth(window.innerWidth);
+        if (typeof window !== 'undefined') {
+          const w = window.innerWidth;
+          if (typeof w === 'number' && w > 0) setWidth(w);
+        }
       });
     };
     window.addEventListener('resize', onResize, { passive: true });

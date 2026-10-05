@@ -85,14 +85,15 @@ export const VirtualGrid = memo(function VirtualGrid({
   if (!columns || columns <= 0) return null;
 
   const rowCount = Math.ceil(items.length / columns);
+  if (!rowCount || rowCount <= 0) return null;
+
+  const estimateSize = ROW_ESTIMATE[variant];
+  if (!estimateSize || estimateSize <= 0) return null;
 
   const rowVirtualizer = useVirtualizer({
     count: rowCount,
     getScrollElement: () => scrollRef.current,
-    // Cards now stretch to fill their column, so a row's height depends on the
-    // viewport. Rows are measured with `measureElement` below; this is only the
-    // pre-measure guess.
-    estimateSize: () => ROW_ESTIMATE[variant],
+    estimateSize: () => estimateSize,
     overscan: 3,
     gap: 20,
   });
@@ -128,17 +129,13 @@ export const VirtualGrid = memo(function VirtualGrid({
       ref={scrollRef}
       onScroll={handleScroll}
       className={`relative overflow-y-auto ${className}`}
-      // Never widen this to `contain: strict` (or `content`): those imply
-      // `contain: size`, and this box is `height: auto` with only a max-height,
-      // so size containment resolves its height to 0px and hides every card.
-      // Measured in Chrome: clientHeight 0px with `strict`, 605px with this.
       style={{ contain: 'layout paint' }}
     >
       <div
         ref={gridRef}
         role="list"
         className="px-4 md:px-8"
-        style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}
+        style={{ height: Math.max(0, rowVirtualizer.getTotalSize() || 0), position: 'relative' }}
       >
         {virtualRows.map((virtualRow) => {
           const start = virtualRow.index * columns;
