@@ -6,7 +6,7 @@
  * The pages themselves stay thin, which is what keeps the navigation model
  * identical across the app.
  */
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import type { ContentItem } from '@/types';
@@ -67,6 +67,9 @@ export const CatalogPage = memo(function CatalogPage({
   const rootRef = useRef<HTMLDivElement>(null);
   const [limit, setLimit] = useState(pageSize);
   const [params] = useSearchParams();
+  const [headerVisible, setHeaderVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // A different kind of view (Home → Movies) resets the growth window.
   const scopeKey = `${kind}:${params.toString()}`;
@@ -77,6 +80,24 @@ export const CatalogPage = memo(function CatalogPage({
   }
 
   useDpadNavigation(rootRef, { loop: false });
+
+  // Track scroll direction to auto-hide header and filters
+  const handleScroll = useCallback(() => {
+    const currentScrollY = window.scrollY;
+    if (currentScrollY > lastScrollY.current + 10) {
+      // Scrolling down - hide header
+      setHeaderVisible(false);
+    } else if (currentScrollY < lastScrollY.current - 10) {
+      // Scrolling up - show header
+      setHeaderVisible(true);
+    }
+    lastScrollY.current = currentScrollY;
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
   const visible = useMemo(
     () => (result.length > limit ? result.slice(0, limit) : result),
@@ -92,30 +113,36 @@ export const CatalogPage = memo(function CatalogPage({
 
   return (
     <div ref={rootRef}>
-      <PageHeader
-        title={title}
-        subtitle={
-          subtitle ?? (
-            <>
-              {formatCount(result.length)}
-              {result.length !== itemCount ? ' of ' : ' '}
-              {hasActive ? 'entries match' : 'entries'}
-            </>
-          )
-        }
+      <div
+        className={`transition-all duration-300 ease-out ${
+          headerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'
+        }`}
       >
-        {notice}
-      </PageHeader>
+        <PageHeader
+          title={title}
+          subtitle={
+            subtitle ?? (
+              <>
+                {formatCount(result.length)}
+                {result.length !== itemCount ? ' of ' : ' '}
+                {hasActive ? 'entries match' : 'entries'}
+              </>
+            )
+          }
+        >
+          {notice}
+        </PageHeader>
 
-      <FilterBar
-        filters={filters}
-        hasActive={hasActive}
-        scope={kind}
-        showSort={showSort}
-        showFavorites={showFavorites}
-        onChange={setFilter}
-        onClear={clearAll}
-      />
+        <FilterBar
+          filters={filters}
+          hasActive={hasActive}
+          scope={kind}
+          showSort={showSort}
+          showFavorites={showFavorites}
+          onChange={setFilter}
+          onClear={clearAll}
+        />
+      </div>
 
       {result.length === 0 ? (
         <EmptyState
