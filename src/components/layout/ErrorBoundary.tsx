@@ -76,7 +76,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             ? 'The app was updated since this page was loaded. Reload to pick up the new version.'
             : 'Something in this page failed to render. The rest of the app still works — you can go back and try again.'
         }
-        detail={`${error.name}: ${error.message}`}
+        detail={`${error.name}: ${error.message}\n\nStack:\n${error.stack || 'No stack trace'}`}
         onRetry={isChunkError ? this.handleReload : this.handleRetry}
         retryLabel={isChunkError ? 'Reload' : 'Try again'}
         onSecondary={isChunkError ? undefined : this.handleGoBack}
