@@ -6,7 +6,7 @@
  * The pages themselves stay thin, which is what keeps the navigation model
  * identical across the app.
  */
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import type { ContentItem } from '@/types';
@@ -82,22 +82,19 @@ export const CatalogPage = memo(function CatalogPage({
   useDpadNavigation(rootRef, { loop: false });
 
   // Track scroll direction to auto-hide header and filters
-  const handleScroll = useCallback(() => {
-    const currentScrollY = window.scrollY;
-    if (currentScrollY > lastScrollY.current + 10) {
-      // Scrolling down - hide header
-      setHeaderVisible(false);
-    } else if (currentScrollY < lastScrollY.current - 10) {
-      // Scrolling up - show header
-      setHeaderVisible(true);
-    }
-    lastScrollY.current = currentScrollY;
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
+  const handleGridScroll = useCallback(
+    (scrollTop: number) => {
+      if (scrollTop > lastScrollY.current + 10) {
+        // Scrolling down - hide header
+        setHeaderVisible(false);
+      } else if (scrollTop < lastScrollY.current - 10) {
+        // Scrolling up - show header
+        setHeaderVisible(true);
+      }
+      lastScrollY.current = scrollTop;
+    },
+    [],
+  );
 
   const visible = useMemo(
     () => (result.length > limit ? result.slice(0, limit) : result),
@@ -169,6 +166,7 @@ export const CatalogPage = memo(function CatalogPage({
             favoriteIds={favoriteIds}
             onToggleFavorite={onToggleFavorite}
             onEndReached={onEndReached}
+            onScroll={handleGridScroll}
             resetKey={resetKey}
             className="max-h-[calc(100dvh-13rem)]"
           />

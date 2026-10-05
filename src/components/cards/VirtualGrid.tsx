@@ -65,6 +65,7 @@ export interface VirtualGridProps {
   /** Scrolls to the top when this changes — used on filter changes. */
   resetKey?: string;
   className?: string;
+  onScroll?: (scrollTop: number, scrollHeight: number, clientHeight: number) => void;
 }
 
 export const VirtualGrid = memo(function VirtualGrid({
@@ -105,11 +106,12 @@ export const VirtualGrid = memo(function VirtualGrid({
     rowVirtualizer.scrollToOffset(0);
   }
 
-  const handleEndReached = useCallback(() => {
+  const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
+    onScroll?.(el.scrollTop, el.scrollHeight, el.clientHeight);
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 600) onEndReached?.();
-  }, [onEndReached]);
+  }, [onEndReached, onScroll]);
 
   useDpadNavigation(gridRef, { loop: false });
 
@@ -118,7 +120,7 @@ export const VirtualGrid = memo(function VirtualGrid({
   return (
     <div
       ref={scrollRef}
-      onScroll={handleEndReached}
+      onScroll={handleScroll}
       className={`relative overflow-y-auto ${className}`}
       // Never widen this to `contain: strict` (or `content`): those imply
       // `contain: size`, and this box is `height: auto` with only a max-height,
