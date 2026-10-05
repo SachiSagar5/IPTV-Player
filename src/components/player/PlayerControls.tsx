@@ -18,6 +18,8 @@ import { useItemRating } from '@/hooks/useRating';
 import { useDpadNavigation } from '@/hooks/useDpadNavigation';
 import { navCandidates } from '@/hooks/navCandidates';
 import type { StreamFeatures } from '@/services/hls/nativeSupport';
+import { introTimestampsRepo } from '@/services/storage/userDataRepo';
+import type { IntroTimestampsRecord } from '@/services/storage/userDataRepo';
 
 export interface PlayerControlsProps {
   visible: boolean;
@@ -87,15 +89,32 @@ export const PlayerControls = memo(function PlayerControls({
   streamFeatures,
 }: PlayerControlsProps) {
   const [menu, setMenu] = useState<'none' | 'quality' | 'audio' | 'speed'>('none');
+  const [introTimestamps, setIntroTimestamps] = useState<IntroTimestampsRecord | null>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const isLive = item.kind === 'live';
   const isFullscreen = false;
 
   useDpadNavigation(barRef, { loop: false });
 
+  // Load intro timestamps for VOD content
+  useEffect(() => {
+    if (!isLive && item.kind !== 'live') {
+      introTimestampsRepo.get(item.id).then(setIntroTimestamps).catch(() => setIntroTimestamps(null));
+    }
+  }, [item.id, isLive]);
+
   const closeMenu = useCallback(() => setMenu('none'), []);
   const isPlaying = status === 'playing' || status === 'buffering';
   const seekingDisabled = isLive;
+
+  const hasIntro = introTimestamps !== null && introTimestamps.introEnd > introTimestamps.introStart;
+  const canSkipIntro = hasIntro && currentTime < introTimestamps!.introEnd;
+
+  const handleSkipIntro = useCallback(() => {
+    if (introTimestamps && introTimestamps.introEnd > currentTime) {
+      onSeek(introTimestamps.introEnd);
+    }
+  }, [introTimestamps, currentTime, onSeek]);
 
   const durationLabel = isLive ? 'LIVE' : formatTime(duration);
   const positionLabel = isLive ? 'At the edge' : formatTime(currentTime);
@@ -238,6 +257,14 @@ export const PlayerControls = memo(function PlayerControls({
             onClick={() => onSeekBy(10)}
             className="hidden sm:flex"
           />
+          {canSkipIntro ? (
+            <ControlButton
+              icon="skip-next"
+              label={`Skip intro (${formatTime(introTimestamps!.introEnd - currentTime)} left)`}
+              onClick={handleSkipIntro}
+              className="hidden sm:flex"
+            />
+          ) : null}
 
           {/* Volume */}
           <div className="group/vol flex items-center">

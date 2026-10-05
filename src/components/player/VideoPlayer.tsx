@@ -28,6 +28,8 @@ import {
   useAppSelector,
 } from '@/store/appStore';
 import { formatEpisodeLabel } from '@/utils/format';
+import { introTimestampsRepo } from '@/services/storage/userDataRepo';
+import type { IntroTimestampsRecord } from '@/services/storage/userDataRepo';
 
 const PROXY_ENDPOINT = '/api/stream';
 
@@ -86,6 +88,7 @@ export const VideoPlayer = memo(function VideoPlayer({
   const [fitMode, setFitMode] = useState<'contain' | 'cover' | 'fill' | 'none'>('contain');
   const [audioTracks, setAudioTracks] = useState<Array<{ id: number; label: string; lang: string }>>([]);
   const [currentAudioTrack, setCurrentAudioTrack] = useState(-1);
+  const [introTimestamps, setIntroTimestamps] = useState<IntroTimestampsRecord | null>(null);
   const playableUrl = getPlayableUrl(item.streams[0]?.url ?? '');
   const resumeRef = useRef(startPosition);
 
@@ -239,6 +242,13 @@ export const VideoPlayer = memo(function VideoPlayer({
     };
   }, [item.id, playableUrl, settings.defaultQuality]);
 
+  // Load intro timestamps for VOD content
+  useEffect(() => {
+    if (item.kind !== 'live') {
+      introTimestampsRepo.get(item.id).then(setIntroTimestamps).catch(() => setIntroTimestamps(null));
+    }
+  }, [item.id]);
+
   useEffect(() => {
     const media = mediaRef.current;
     if (!media || !playableUrl) return;
@@ -252,6 +262,14 @@ export const VideoPlayer = memo(function VideoPlayer({
       if (pending > 0 && media.currentTime < 1) {
         try { media.currentTime = pending; } catch {}
       }
+
+      // Auto-skip intro if starting from beginning and intro timestamps exist
+      if (introTimestamps && introTimestamps.introEnd > introTimestamps.introStart && pending === 0 && resumeRef.current === 0) {
+        if (media.currentTime < introTimestamps.introEnd) {
+          try { media.currentTime = introTimestamps.introEnd; } catch {}
+        }
+      }
+
       void media.play().catch(() => { setStatus('paused'); });
     };
 

@@ -324,12 +324,84 @@ export const recentRepo = {
   },
 };
 
+export interface IntroTimestampsRecord {
+  contentId: string;
+  playlistId: string;
+  name: string;
+  logo: string;
+  kind: ContentItem['kind'];
+  group: string;
+  seriesId?: string;
+  season?: number;
+  episode?: number;
+  introStart: number; // seconds
+  introEnd: number;   // seconds
+  updatedAt: number;
+}
+
+export const introTimestampsRepo = {
+  async get(contentId: string): Promise<IntroTimestampsRecord | undefined> {
+    return get<IntroTimestampsRecord>(STORE.introTimestamps, contentId);
+  },
+
+  async save(
+    item: ContentItem,
+    introStart: number,
+    introEnd: number,
+    now = Date.now()
+  ): Promise<IntroTimestampsRecord> {
+    const record: IntroTimestampsRecord = {
+      contentId: item.id,
+      playlistId: item.playlistId,
+      name: item.name,
+      logo: item.logo,
+      kind: item.kind,
+      group: item.group,
+      seriesId: item.seriesId,
+      season: item.season,
+      episode: item.episode,
+      introStart: Math.max(0, Math.floor(introStart)),
+      introEnd: Math.max(0, Math.floor(introEnd)),
+      updatedAt: now,
+    };
+    await put(STORE.introTimestamps, record);
+    return record;
+  },
+
+  async remove(contentId: string): Promise<void> {
+    await del(STORE.introTimestamps, contentId);
+  },
+
+  async listForPlaylist(playlistId: string): Promise<IntroTimestampsRecord[]> {
+    return getAllByIndex<IntroTimestampsRecord>(
+      STORE.introTimestamps,
+      'playlistId',
+      IDBKeyRange.only(playlistId),
+    );
+  },
+
+  async removeMany(contentIds: string[]): Promise<void> {
+    if (contentIds.length === 0) return;
+    const { openDb, txDone } = await import('./db');
+    const db = await openDb();
+    const tx = db.transaction(STORE.introTimestamps, 'readwrite');
+    const store = tx.objectStore(STORE.introTimestamps);
+    for (const id of contentIds) store.delete(id);
+    await txDone(tx);
+  },
+};
+
 export async function wipeUserData(): Promise<void> {
-  const [progress, health] = await Promise.all([progressRepo.list(), liveHealthRepo.list()]);
+  const [progress, health, intros] = await Promise.all([
+    progressRepo.list(),
+    liveHealthRepo.list(),
+    introTimestampsRepo.listForPlaylist('').catch(() => []),
+  ]);
   await Promise.all([
     progressRepo.removeMany(progress.map((p) => p.contentId)),
     recentRepo.clear(),
     liveHealthRepo.removeMany(health.map((h) => h.contentId)),
+    introTimestampsRepo.removeMany(intros.map((i) => i.contentId)).catch(() => undefined),
   ]);
   const { clearStore } = await import('./db');
   await clearStore(STORE.favorites);

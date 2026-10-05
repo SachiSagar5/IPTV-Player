@@ -15,7 +15,7 @@
  */
 
 export const DB_NAME = 'iptv-player';
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 
 /** Entries per IndexedDB record. Tuned for write latency vs. read count. */
 export const ITEMS_PER_CHUNK = 2000;
@@ -30,6 +30,7 @@ export const STORE = {
   posters: 'posters',
   meta: 'meta',
   liveHealth: 'liveHealth',
+  introTimestamps: 'introTimestamps',
 } as const;
 
 export type StoreName = (typeof STORE)[keyof typeof STORE];
@@ -93,6 +94,13 @@ function upgradeSchema(db: IDBDatabase): void {
     const store = db.createObjectStore(STORE.liveHealth, { keyPath: 'contentId' });
     store.createIndex('at', 'at');
     store.createIndex('playlistId', 'playlistId');
+  }
+  if (!db.objectStoreNames.contains(STORE.introTimestamps)) {
+    // keyPath 'contentId' — one row per VOD item, stores intro start/end times
+    // so users can skip intros for movies and series episodes.
+    const store = db.createObjectStore(STORE.introTimestamps, { keyPath: 'contentId' });
+    store.createIndex('playlistId', 'playlistId');
+    store.createIndex('updatedAt', 'updatedAt');
   }
 }
 
