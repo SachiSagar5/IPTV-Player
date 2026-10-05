@@ -84,7 +84,7 @@ export function AppLayout() {
 
         <main
           id="main"
-          className={isPlayer ? 'relative' : 'relative pt-14 pb-20 md:pt-16 md:pb-0'}
+          className={isPlayer ? 'relative bg-ink-950' : 'relative pt-14 pb-20 md:pt-16 md:pb-0 bg-ink-950'}
         >
           <ErrorBoundary resetKey={location.pathname}>
             <Suspense fallback={<RouteFallback />}>

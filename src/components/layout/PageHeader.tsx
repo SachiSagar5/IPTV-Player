@@ -69,5 +69,5 @@ export function PageSection({
 
 /** Bottom spacer so the last row is not hidden behind the mobile tab bar. */
 export function PageEnd({ children }: { children?: ReactNode }) {
-  return <div className="h-16 md:h-8">{children}</div>;
+  return <div className="h-16 md:h-8 bg-ink-950">{children}</div>;
 }
