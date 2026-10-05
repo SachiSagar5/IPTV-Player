@@ -82,6 +82,7 @@ export const VirtualGrid = memo(function VirtualGrid({
   const gridRef = useRef<HTMLDivElement>(null);
   const width = useViewportWidth();
   const columns = columnsForWidth(width, variant);
+  if (!columns || columns <= 0) return null;
 
   const rowCount = Math.ceil(items.length / columns);
 
@@ -109,8 +110,9 @@ export const VirtualGrid = memo(function VirtualGrid({
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
+    if (typeof el.scrollTop !== 'number' || typeof el.scrollHeight !== 'number' || typeof el.clientHeight !== 'number') return;
     try {
-      onScroll?.(el.scrollTop, el.scrollHeight, el.clientHeight);
+      onScroll?.(el.scrollTop);
     } catch {
       // Ignore callback errors
     }
