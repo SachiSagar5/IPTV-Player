@@ -101,7 +101,7 @@ export const PlayerControls = memo(function PlayerControls({
   const canSkipIntro = !isLive && currentTime < 180 && duration > 180;
 
   const handleSkipIntro = useCallback(() => {
-    onSeek(currentTime + 120); // Skip 2 minutes
+    onSeek(currentTime + 90); // Skip 1:30
   }, [currentTime, onSeek]);
 
   const durationLabel = isLive ? 'LIVE' : formatTime(duration);
@@ -248,7 +248,7 @@ export const PlayerControls = memo(function PlayerControls({
           {canSkipIntro ? (
             <ControlButton
               icon="skip-next"
-              label="Skip intro (+2 min)"
+              label="Skip intro (+1:30)"
               onClick={handleSkipIntro}
             />
           ) : null}

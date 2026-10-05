@@ -254,9 +254,9 @@ export const VideoPlayer = memo(function VideoPlayer({
         try { media.currentTime = pending; } catch {}
       }
 
-      // Auto-skip 2 minutes if starting from beginning (no resume position)
+      // Auto-skip 1:30 if starting from beginning (no resume position)
       if (pending === 0 && resumeRef.current === 0 && item.kind !== 'live') {
-        try { media.currentTime = 120; } catch {}
+        try { media.currentTime = 90; } catch {}
         introSkippedRef.current = true;
       }
 
