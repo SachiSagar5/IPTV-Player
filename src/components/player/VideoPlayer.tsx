@@ -89,6 +89,7 @@ export const VideoPlayer = memo(function VideoPlayer({
   const [audioTracks, setAudioTracks] = useState<Array<{ id: number; label: string; lang: string }>>([]);
   const [currentAudioTrack, setCurrentAudioTrack] = useState(-1);
   const [introTimestamps, setIntroTimestamps] = useState<IntroTimestampsRecord | null>(null);
+  const introSkippedRef = useRef(false);
   const playableUrl = getPlayableUrl(item.streams[0]?.url ?? '');
   const resumeRef = useRef(startPosition);
 
@@ -229,6 +230,11 @@ export const VideoPlayer = memo(function VideoPlayer({
     engineRef.current = engine;
     setEngineName(engine.engineName);
 
+    // Load intro timestamps for VOD content before attaching event listeners
+    if (item.kind !== 'live') {
+      introTimestampsRepo.get(item.id).then(setIntroTimestamps).catch(() => setIntroTimestamps(null));
+    }
+
     const source = { url: playableUrl };
     engine.load(source, {
       defaultLevel: settings.defaultQuality,
@@ -241,13 +247,6 @@ export const VideoPlayer = memo(function VideoPlayer({
       engineRef.current = null;
     };
   }, [item.id, playableUrl, settings.defaultQuality]);
-
-  // Load intro timestamps for VOD content
-  useEffect(() => {
-    if (item.kind !== 'live') {
-      introTimestampsRepo.get(item.id).then(setIntroTimestamps).catch(() => setIntroTimestamps(null));
-    }
-  }, [item.id]);
 
   useEffect(() => {
     const media = mediaRef.current;
@@ -267,6 +266,7 @@ export const VideoPlayer = memo(function VideoPlayer({
       if (introTimestamps && introTimestamps.introEnd > introTimestamps.introStart && pending === 0 && resumeRef.current === 0) {
         if (media.currentTime < introTimestamps.introEnd) {
           try { media.currentTime = introTimestamps.introEnd; } catch {}
+          introSkippedRef.current = true;
         }
       }
 
@@ -279,6 +279,14 @@ export const VideoPlayer = memo(function VideoPlayer({
 
     const onTimeUpdate = (): void => {
       setCurrentTime(media.currentTime);
+
+      // Fallback: if intro timestamps loaded after metadata, skip if we're in the intro region
+      if (!introSkippedRef.current && introTimestamps && introTimestamps.introEnd > introTimestamps.introStart) {
+        if (media.currentTime < introTimestamps.introEnd && resumeRef.current === 0) {
+          try { media.currentTime = introTimestamps.introEnd; } catch {}
+          introSkippedRef.current = true;
+        }
+      }
     };
 
     const onProgress = (): void => {
