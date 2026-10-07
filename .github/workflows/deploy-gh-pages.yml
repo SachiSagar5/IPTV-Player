@@ -18,17 +18,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+- name: Checkout
         uses: actions/checkout@v4
 
       - name: Verify source
         run: |
+          echo "=== Commit SHA: ${{ github.sha }} ==="
           echo "=== Checking source files ==="
           grep -r "BUILD_MARKER" src/ || echo "MARKER NOT FOUND"
           echo "=== Checking PROXY_ENDPOINT ==="
           grep -r "PROXY_ENDPOINT" src/ || echo "PROXY_ENDPOINT NOT FOUND"
           echo "=== Checking iptv-cors-proxy ==="
           grep -r "iptv-cors-proxy" src/ || echo "iptv-cors-proxy NOT FOUND"
+          echo "=== File list ==="
+          ls -la src/components/player/
 
       - name: Setup Node
         uses: actions/setup-node@v4
