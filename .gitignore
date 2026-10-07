@@ -32,3 +32,5 @@ coverage/
 # Gradle wrapper JAR and is fully described by that script.
 android/
 capacitor.config.*.tmp
+.vercel
+.env*

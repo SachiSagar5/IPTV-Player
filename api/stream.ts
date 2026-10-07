@@ -2,12 +2,22 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const ALLOWED_ORIGINS = [
   'https://iptvplayer-ebon.vercel.app',
+  'https://iptvplayer-9xf08hngx-sachisagar5s-projects.vercel.app',
+  'https://iptvplayer-at63nnqea-sachisagar5s-projects.vercel.app',
+  'https://iptvplayer-65y3p251z-sachisagar5s-projects.vercel.app',
+  'https://iptvplayer-4dun1y3h4-sachisagar5s-projects.vercel.app',
+  'https://iptvplayer-fv2mq2zg8-sachisagar5s-projects.vercel.app',
+  'https://iptvplayer-au81efopb-sachisagar5s-projects.vercel.app',
+  'https://iptvplayer-1ret0ol7t-sachisagar5s-projects.vercel.app',
+  'https://iptvplayer-oiifz1s82-sachisagar5s-projects.vercel.app',
+  'https://iptvplayer-eligywxf6-sachisagar5s-projects.vercel.app',
   'http://localhost:5173',
   'http://localhost:3000',
 ];
 
 function corsHeaders(origin: string | null): Record<string, string> {
-  const allowOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  const isAllowed = origin && (ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.vercel.app') || origin.startsWith('http://localhost:'));
+  const allowOrigin = isAllowed ? origin : '*';
   return {
     'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
@@ -31,10 +41,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const headers = corsHeaders(origin);
 
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', headers['Access-Control-Allow-Origin']);
-    res.setHeader('Access-Control-Allow-Methods', headers['Access-Control-Allow-Methods']);
-    res.setHeader('Access-Control-Allow-Headers', headers['Access-Control-Allow-Headers']);
-    res.setHeader('Access-Control-Max-Age', headers['Access-Control-Max-Age']);
+    const origin = req.headers.origin ?? null;
+    const optsHeaders = corsHeaders(origin);
+    res.setHeader('Access-Control-Allow-Origin', optsHeaders['Access-Control-Allow-Origin']);
+    res.setHeader('Access-Control-Allow-Methods', optsHeaders['Access-Control-Allow-Methods']);
+    res.setHeader('Access-Control-Allow-Headers', optsHeaders['Access-Control-Allow-Headers']);
+    res.setHeader('Access-Control-Max-Age', optsHeaders['Access-Control-Max-Age']);
     return res.status(204).end();
   }
 
