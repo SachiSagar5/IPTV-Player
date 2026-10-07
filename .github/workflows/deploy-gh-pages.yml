@@ -36,26 +36,10 @@ jobs:
           NODE_ENV: production
           GITHUB_PAGES: 'true'
 
-      - name: Verify source before build
-        run: |
-          echo "=== Current directory ==="
-          pwd
-          echo "=== Listing src ==="
-          ls -la src/
-          echo "=== Listing src/components/player ==="
-          ls -la src/components/player/
-          echo "=== Listing src/services/hls ==="
-          ls -la src/services/hls/
-
-- name: Verify build output
-        run: |
-          echo "=== Dist folder ==="
-          ls -la dist/assets/ | grep index
-          echo "=== Checking for proxy URL in build ==="
-          grep -r "iptv-cors-proxy" dist/ || echo "NOT FOUND IN DIST"
-          grep -r "BUILD_MARKER" dist/ || echo "MARKER NOT FOUND IN DIST"
-
       - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
