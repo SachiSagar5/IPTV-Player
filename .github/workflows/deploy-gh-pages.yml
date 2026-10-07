@@ -36,7 +36,14 @@ jobs:
           NODE_ENV: production
           GITHUB_PAGES: 'true'
 
-      - name: Verify build output
+      - name: Verify source before build
+        run: |
+          echo "=== Checking PROXY_ENDPOINT in VideoPlayer ==="
+          grep "PROXY_ENDPOINT" src/components/player/VideoPlayer.tsx
+          echo "=== Checking PROXY_ENDPOINT in hlsEngine ==="
+          grep "PROXY_ENDPOINT" src/services/hls/hlsEngine.ts
+
+- name: Verify build output
         run: |
           echo "=== Dist folder ==="
           ls -la dist/assets/ | grep index
