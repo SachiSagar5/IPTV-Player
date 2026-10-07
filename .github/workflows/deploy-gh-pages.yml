@@ -21,6 +21,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Debug - list files
+        run: |
+          echo "=== pwd ==="
+          pwd
+          echo "=== ls -la ==="
+          ls -la
+          echo "=== ls -la src ==="
+          ls -la src/ || echo "src not found"
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
