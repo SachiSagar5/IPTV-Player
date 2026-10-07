@@ -88,9 +88,6 @@ const pwaPlugins = isNativeBuild
 
 export default defineConfig({
   base: process.env.GITHUB_PAGES === 'true' ? '/IPTV-Player/' : './',
-  define: {
-    __BUILD_ID__: JSON.stringify(process.env.BUILD_ID || 'local'),
-  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
