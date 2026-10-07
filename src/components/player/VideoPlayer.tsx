@@ -29,7 +29,7 @@ import {
 } from '@/store/appStore';
 import { formatEpisodeLabel } from '@/utils/format';
 
-const PROXY_ENDPOINT = 'https://proxy.cors.dev/';
+const PROXY_ENDPOINT = 'https://iptv-cors-proxy.beautiful-raisin.workers.dev/';
 
 function buildProxyUrl(targetUrl: string): string {
   return `${PROXY_ENDPOINT}${targetUrl}`;
