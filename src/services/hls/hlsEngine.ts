@@ -31,11 +31,10 @@ import {
 } from './nativeSupport';
 import type { StreamSource } from '@/types';
 
-const PROXY_ENDPOINT = '/api/stream';
+const PROXY_ENDPOINT = 'https://proxy.cors.dev/';
 
 function buildProxyUrl(targetUrl: string): string {
-  const encoded = encodeURIComponent(targetUrl);
-  return `${PROXY_ENDPOINT}?url=${encoded}`;
+  return `${PROXY_ENDPOINT}${targetUrl}`;
 }
 
 function shouldUseProxy(url: string): boolean {
