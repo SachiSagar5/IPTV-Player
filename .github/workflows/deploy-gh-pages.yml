@@ -38,10 +38,14 @@ jobs:
 
       - name: Verify source before build
         run: |
-          echo "=== Checking VideoPlayer.tsx ==="
-          head -50 src/components/player/VideoPlayer.tsx || echo "FILE NOT FOUND"
-          echo "=== Checking hlsEngine.ts ==="
-          head -50 src/services/hls/hlsEngine.ts || echo "FILE NOT FOUND"
+          echo "=== Current directory ==="
+          pwd
+          echo "=== Listing src ==="
+          ls -la src/
+          echo "=== Listing src/components/player ==="
+          ls -la src/components/player/
+          echo "=== Listing src/services/hls ==="
+          ls -la src/services/hls/
 
 - name: Verify build output
         run: |
