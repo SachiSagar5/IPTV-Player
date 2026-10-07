@@ -22,8 +22,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Verify source
-        run: grep -r "BUILD_MARKER" src/ || echo "MARKER NOT FOUND"
-        working-directory: ${{ github.workspace }}
+        run: |
+          echo "=== Checking source files ==="
+          grep -r "BUILD_MARKER" src/ || echo "MARKER NOT FOUND"
+          echo "=== Checking PROXY_ENDPOINT ==="
+          grep -r "PROXY_ENDPOINT" src/ || echo "PROXY_ENDPOINT NOT FOUND"
+          echo "=== Checking iptv-cors-proxy ==="
+          grep -r "iptv-cors-proxy" src/ || echo "iptv-cors-proxy NOT FOUND"
 
       - name: Setup Node
         uses: actions/setup-node@v4
