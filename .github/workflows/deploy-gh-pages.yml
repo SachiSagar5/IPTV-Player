@@ -34,14 +34,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: package-lock.json
+          cache: ''
 
       - name: Install dependencies
-        run: npm ci --prefer-offline=false
+        run: npm ci --prefer-offline=false --no-audit --no-fund
 
       - name: Clean build
-        run: rm -rf dist
+        run: rm -rf dist node_modules/.cache .tsbuildinfo
 
       - name: Build
         run: npm run build
