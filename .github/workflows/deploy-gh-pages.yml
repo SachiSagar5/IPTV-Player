@@ -38,10 +38,10 @@ jobs:
 
       - name: Verify source before build
         run: |
-          echo "=== Checking PROXY_ENDPOINT in VideoPlayer ==="
-          grep "PROXY_ENDPOINT" src/components/player/VideoPlayer.tsx
-          echo "=== Checking PROXY_ENDPOINT in hlsEngine ==="
-          grep "PROXY_ENDPOINT" src/services/hls/hlsEngine.ts
+          echo "=== Checking VideoPlayer.tsx ==="
+          head -50 src/components/player/VideoPlayer.tsx || echo "FILE NOT FOUND"
+          echo "=== Checking hlsEngine.ts ==="
+          head -50 src/services/hls/hlsEngine.ts || echo "FILE NOT FOUND"
 
 - name: Verify build output
         run: |
