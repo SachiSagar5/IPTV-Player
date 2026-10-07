@@ -35,6 +35,7 @@ jobs:
         env:
           NODE_ENV: production
           GITHUB_PAGES: 'true'
+          BUILD_ID: ${{ github.sha }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
