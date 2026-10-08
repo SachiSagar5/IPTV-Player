@@ -29,7 +29,6 @@ import {
 } from '@/store/appStore';
 import { formatEpisodeLabel } from '@/utils/format';
 
-const BUILD_TIMESTAMP = '20261008-0615';
 const PROXY_ENDPOINT = '/api/stream';
 
 function buildProxyUrl(targetUrl: string): string {
