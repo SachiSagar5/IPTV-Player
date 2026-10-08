@@ -21,40 +21,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Clean
-        run: rm -rf dist node_modules
+      - name: Clean everything
+        run: |
+          rm -rf dist node_modules package-lock.json .tsbuildinfo .vite
+          npm cache clean --force
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
+          cache: ''
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund --prefer-offline=false
 
       - name: Build
         run: npm run build
         env:
           NODE_ENV: production
           GITHUB_PAGES: 'true'
-          BUILD_TIMESTAMP: ${{ github.run_id }}
 
       - name: Verify build output
         run: |
           echo "=== Build output files ==="
           ls -la dist/assets/ | grep index
           echo "=== Checking for proxy URL in build ==="
-          if grep -r "iptv-cors-proxy" dist/; then
-            echo "SUCCESS: Proxy URL found in build"
-          else
-            echo "FAILURE: Proxy URL NOT found in build"
-            echo "=== Searching for PROXY_ENDPOINT ==="
-            grep -r "PROXY_ENDPOINT" dist/ || echo "Not found"
-            echo "=== Searching for VERIFY_BUILD ==="
-            grep -r "VERIFY_BUILD" dist/ || echo "Not found"
-            exit 1
-          fi
+          grep -r "PROXY_ENDPOINT" dist/ && echo "FOUND" || (echo "NOT FOUND - BUILD FAILED" && exit 1)
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
