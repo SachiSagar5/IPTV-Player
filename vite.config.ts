@@ -129,9 +129,9 @@ export default defineConfig({
           }
           return undefined;
         },
-        entryFileNames: 'assets/[name]-[hash]-v2.js',
-        chunkFileNames: 'assets/[name]-[hash]-v2.js',
-        assetFileNames: 'assets/[name]-[hash]-v2.[ext]',
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
       },
     },
   },
