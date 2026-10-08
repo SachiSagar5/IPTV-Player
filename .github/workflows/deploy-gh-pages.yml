@@ -46,7 +46,8 @@ jobs:
           echo "=== Build output files ==="
           ls -la dist/assets/ | grep index
           echo "=== Checking for proxy URL in build ==="
-          grep -r "PROXY_ENDPOINT" dist/ && echo "FOUND" || (echo "NOT FOUND - BUILD FAILED" && exit 1)
+          # Look for the actual proxy endpoint value in the built JS
+          grep -r "/api/stream" dist/ && echo "FOUND" || (echo "NOT FOUND - BUILD FAILED" && exit 1)
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
