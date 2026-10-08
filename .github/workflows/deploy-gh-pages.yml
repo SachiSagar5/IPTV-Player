@@ -40,12 +40,6 @@ jobs:
           NODE_ENV: production
           GITHUB_PAGES: 'true'
 
-      - name: Verify build output
-        run: |
-          echo "=== Checking for PROXY_ENDPOINT in build ==="
-          grep -r "iptv-cors-proxy" dist/ && echo "FOUND" || echo "NOT FOUND - BUILD FAILED"
-          grep -r "VERIFY_BUILD" dist/ && echo "MARKER FOUND" || echo "MARKER NOT FOUND"
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
