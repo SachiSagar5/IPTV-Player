@@ -1,7 +1,15 @@
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    const target = url.searchParams.get('url');
+    let target = url.searchParams.get('url');
+    
+    // Also support path-based URL: /https://example.com
+    if (!target) {
+      const pathTarget = url.pathname.slice(1); // Remove leading /
+      if (pathTarget && (pathTarget.startsWith('http://') || pathTarget.startsWith('https://'))) {
+        target = pathTarget;
+      }
+    }
     
     if (!target) {
       return new Response('Missing url parameter', { status: 400 });
