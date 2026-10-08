@@ -31,7 +31,7 @@ import {
 } from './nativeSupport';
 import type { StreamSource } from '@/types';
 
-const PROXY_ENDPOINT = 'https://iptv-cors-proxy.beautiful-raisin.workers.dev/';
+const PROXY_ENDPOINT = 'https://iptv-cors-proxy.beautiful-raisin.workers.dev/'; // VERIFY_BUILD_20261008_0445
 
 function buildProxyUrl(targetUrl: string): string {
   return `${PROXY_ENDPOINT}${targetUrl}`;
