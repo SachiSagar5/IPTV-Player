@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -21,23 +21,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Debug - list files
-        run: |
-          echo "=== pwd ==="
-          pwd
-          echo "=== ls -la ==="
-          ls -la
-          echo "=== ls -la src ==="
-          ls -la src/ || echo "src not found"
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: ''
+          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --prefer-offline=false --no-audit --no-fund
+        run: npm ci
 
       - name: Build
         run: npm run build
@@ -46,9 +37,6 @@ jobs:
           GITHUB_PAGES: 'true'
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./dist
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
