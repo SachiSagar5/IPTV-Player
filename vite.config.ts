@@ -116,16 +116,9 @@ export default defineConfig({
     cssCodeSplit: true,
     assetsInlineLimit: 2048,
     reportCompressedSize: false,
-    // `vendor-hls` is ~590 kB raw and is the single largest chunk, but it is
-    // behind a dynamic import in `hlsEngine` and is not in the initial HTML, so
-    // it is only paid for by someone who actually opens a stream. The default
-    // 500 kB warning would otherwise fire on every build for no reason.
     chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
-        // Only the four dependencies worth pinning get their own chunk. Anything
-        // else is left to Rollup: a catch-all bucket here used to emit an empty
-        // chunk for the handful of modules left over.
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
           if (id.includes('hls.js')) return 'vendor-hls';
@@ -136,6 +129,9 @@ export default defineConfig({
           }
           return undefined;
         },
+        entryFileNames: 'assets/[name]-[hash]-v2.js',
+        chunkFileNames: 'assets/[name]-[hash]-v2.js',
+        assetFileNames: 'assets/[name]-[hash]-v2.[ext]',
       },
     },
   },
