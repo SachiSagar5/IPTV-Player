@@ -39,6 +39,22 @@ jobs:
           NODE_ENV: production
           GITHUB_PAGES: 'true'
 
+      - name: Verify build output
+        run: |
+          echo "=== Build output files ==="
+          ls -la dist/assets/ | grep index
+          echo "=== Checking for proxy URL in build ==="
+          if grep -r "iptv-cors-proxy" dist/; then
+            echo "SUCCESS: Proxy URL found in build"
+          else
+            echo "FAILURE: Proxy URL NOT found in build"
+            echo "=== Searching for PROXY_ENDPOINT ==="
+            grep -r "PROXY_ENDPOINT" dist/ || echo "Not found"
+            echo "=== Searching for VERIFY_BUILD ==="
+            grep -r "VERIFY_BUILD" dist/ || echo "Not found"
+            exit 1
+          fi
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
