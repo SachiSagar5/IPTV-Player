@@ -289,59 +289,69 @@ export function getFacets(kind?: ContentItem['kind']): FilterFacets {
 
 export async function hydrate(): Promise<void> {
   try {
-    const [playlists, favorites, progress, recents, liveFailures] = await Promise.all([
-      playlistsRepo.list().catch((): PlaylistMeta[] => []),
-      favoritesRepo.list().catch((): FavoriteRecord[] => []),
-      progressRepo.list().catch((): PlaybackProgress[] => []),
-      recentRepo.list().catch((): RecentRecord[] => []),
-      // Absorbs the failure, so a stream-health problem can never keep the whole
-      // app from booting — worst case the channels are simply all visible again.
-      liveHealthRepo.list().catch((): LiveHealthRecord[] => []),
-    ]);
+    const hydrationPromise = (async () => {
+      const [playlists, favorites, progress, recents, liveFailures] = await Promise.all([
+        playlistsRepo.list().catch((): PlaylistMeta[] => []),
+        favoritesRepo.list().catch((): FavoriteRecord[] => []),
+        progressRepo.list().catch((): PlaybackProgress[] => []),
+        recentRepo.list().catch((): RecentRecord[] => []),
+        // Absorbs the failure, so a stream-health problem can never keep the whole
+        // app from booting — worst case the channels are simply all visible again.
+        liveHealthRepo.list().catch((): LiveHealthRecord[] => []),
+      ]);
 
-    const favoriteIds = new Set(favorites.map((f) => f.contentId));
-    const progressById = new Map(progress.map((p) => [p.contentId, p]));
+      const favoriteIds = new Set(favorites.map((f) => f.contentId));
+      const progressById = new Map(progress.map((p) => [p.contentId, p]));
 
-    // Reserve the gated playlists first, so neither choice below can land on
-    // one. The remembered Parent list is honoured when it is still gated, and
-    // otherwise the first available candidate takes its place.
-    const parentPlaylistIds = pickParentPlaylistIds(playlists);
-    const parentSet = new Set(parentPlaylistIds);
-    const rememberedParent = loadParentPlaylistId();
-    const parentPlaylistId =
-      (rememberedParent !== null && parentSet.has(rememberedParent) ? rememberedParent : null) ??
-      parentPlaylistIds[0] ??
-      null;
+      // Reserve the gated playlists first, so neither choice below can land on
+      // one. The remembered Parent list is honoured when it is still gated, and
+      // otherwise the first available candidate takes its place.
+      const parentPlaylistIds = pickParentPlaylistIds(playlists);
+      const parentSet = new Set(parentPlaylistIds);
+      const rememberedParent = loadParentPlaylistId();
+      const parentPlaylistId =
+        (rememberedParent !== null && parentSet.has(rememberedParent) ? rememberedParent : null) ??
+        parentPlaylistIds[0] ??
+        null;
 
-    const requested = loadActivePlaylistId();
-    const active =
-      requested && playlists.some((p) => p.id === requested && !parentSet.has(p.id))
-        ? requested
-        : null;
-    const fallback = playlists.find((p) => p.status === 'ready' && !parentSet.has(p.id))?.id ?? null;
-    const activePlaylistId = active ?? fallback;
+      const requested = loadActivePlaylistId();
+      const active =
+        requested && playlists.some((p) => p.id === requested && !parentSet.has(p.id))
+          ? requested
+          : null;
+      const fallback = playlists.find((p) => p.status === 'ready' && !parentSet.has(p.id))?.id ?? null;
+      const activePlaylistId = active ?? fallback;
 
-    appStore.patch({
-      hydrated: true,
-      playlists,
-      favorites,
-      favoriteIds,
-      progressById,
-      recents,
-      activePlaylistId,
-      parentPlaylistIds,
-      parentPlaylistId,
-      liveFailures: new Map(liveFailures.map((row) => [row.contentId, row])),
-    });
+      appStore.patch({
+        hydrated: true,
+        playlists,
+        favorites,
+        favoriteIds,
+        progressById,
+        recents,
+        activePlaylistId,
+        parentPlaylistIds,
+        parentPlaylistId,
+        liveFailures: new Map(liveFailures.map((row) => [row.contentId, row])),
+      });
 
-    if (parentPlaylistId) {
-      await loadParentPlaylist(parentPlaylistId);
-    } else {
-      saveParentPlaylistId(null);
-    }
-    if (activePlaylistId) {
-      await activatePlaylist(activePlaylistId);
-    }
+      if (parentPlaylistId) {
+        await loadParentPlaylist(parentPlaylistId);
+      } else {
+        saveParentPlaylistId(null);
+      }
+      if (activePlaylistId) {
+        await activatePlaylist(activePlaylistId);
+      }
+    })();
+
+    // Timeout after 15 seconds — if IndexedDB is blocked by another tab,
+    // the user gets an actionable error instead of a permanent spinner.
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Hydration timed out — close other tabs and reload')), 15000),
+    );
+
+    await Promise.race([hydrationPromise, timeoutPromise]);
   } catch (error) {
     appStore.patch({
       hydrated: true,

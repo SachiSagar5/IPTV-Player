@@ -43,6 +43,10 @@ async function bootstrap(): Promise<void> {
   // connection, so we let the user keep using the app.
   onDbBlocked(() => {
     console.warn('[db] upgrade blocked by another open tab');
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      const event = new CustomEvent('indexeddb-blocked');
+      window.dispatchEvent(event);
+    }
   });
 
   try {

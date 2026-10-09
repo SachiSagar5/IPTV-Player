@@ -116,8 +116,10 @@ export function onDbBlocked(handler: () => void): void {
   blockedHandler = handler;
 }
 
-export function openDb(): Promise<IDBDatabase> {
+export function openDb(options?: { timeout?: number }): Promise<IDBDatabase> {
   if (dbPromise) return dbPromise;
+
+  const timeout = options?.timeout ?? 10000;
 
   dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
     if (!isIndexedDbAvailable()) {
@@ -126,6 +128,11 @@ export function openDb(): Promise<IDBDatabase> {
     }
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
+    const timeoutId = setTimeout(() => {
+      dbPromise = null;
+      reject(new Error('IndexedDB open timed out — another tab may be blocking it'));
+    }, timeout);
+
     request.onupgradeneeded = () => {
       upgradeSchema(request.result);
     };
@@ -133,6 +140,7 @@ export function openDb(): Promise<IDBDatabase> {
       blockedHandler?.();
     };
     request.onsuccess = () => {
+      clearTimeout(timeoutId);
       const db = request.result;
       db.onversionchange = () => {
         db.close();
@@ -141,6 +149,7 @@ export function openDb(): Promise<IDBDatabase> {
       resolve(db);
     };
     request.onerror = () => {
+      clearTimeout(timeoutId);
       dbPromise = null;
       reject(request.error ?? new Error('Failed to open IndexedDB'));
     };
