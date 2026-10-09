@@ -462,6 +462,57 @@ export default function SettingsPage() {
         </div>
       </Section>
 
+      <Section
+        title="Network"
+        description="Configure a CORS proxy for streams that don't allow cross-origin requests."
+      >
+        <div className="divide-y divide-ink-700">
+          <Row>
+            <SettingRow
+              label="Custom CORS proxy URL"
+              description="Optional. Override the built-in proxy endpoint. Format: https://your-proxy.example.com/api/stream. The proxy must accept a 'url' query parameter and forward with CORS headers. Leave empty to use the default (works on Vercel)."
+              control={
+                <input
+                  type="url"
+                  data-nav
+                  value={settings.corsProxyUrl}
+                  onChange={(event) => updateSettings({ corsProxyUrl: event.target.value })}
+                  placeholder="https://example.com/api/stream"
+                  className="w-full max-w-72 rounded-card border border-ink-700 bg-ink-900 px-3 py-2 text-sm text-mist-50 placeholder:text-mist-600 focus:border-accent-400 focus:outline-none"
+                />
+              }
+            />
+          </Row>
+          {settings.corsProxyUrl ? (
+            <Row>
+              <SettingRow
+                label="Proxy status"
+                description="Using custom CORS proxy."
+                control={
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-medium text-emerald-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    Active
+                  </span>
+                }
+              />
+            </Row>
+          ) : (
+            <Row>
+              <SettingRow
+                label="Proxy status"
+                description="Using default proxy endpoint (/api/stream). Works on Vercel. On GitHub Pages, set a custom proxy to play HTTP streams."
+                control={
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-[11px] font-medium text-amber-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                    Default
+                  </span>
+                }
+              />
+            </Row>
+          )}
+        </div>
+      </Section>
+
       <Section title="Storage" description="This device only. Nothing is synced or uploaded.">
         <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Playlists" value={playlists.length} />

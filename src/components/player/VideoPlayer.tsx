@@ -28,24 +28,7 @@ import {
   useAppSelector,
 } from '@/store/appStore';
 import { formatEpisodeLabel } from '@/utils/format';
-
-const PROXY_ENDPOINT = '/api/stream';
-
-function buildProxyUrl(targetUrl: string): string {
-  const encoded = encodeURIComponent(targetUrl);
-  return `${PROXY_ENDPOINT}?url=${encoded}`;
-}
-
-function shouldUseProxy(url: string): boolean {
-  if (typeof window === 'undefined') return false;
-  const isHttpsPage = window.location.protocol === 'https:';
-  const isHttpUrl = url.startsWith('http://');
-  return isHttpsPage && isHttpUrl;
-}
-
-function getPlayableUrl(sourceUrl: string): string {
-  return shouldUseProxy(sourceUrl) ? buildProxyUrl(sourceUrl) : sourceUrl;
-}
+import { getPlayableUrl } from '@/utils/proxy';
 
 export interface VideoPlayerProps {
   item: ContentItem;

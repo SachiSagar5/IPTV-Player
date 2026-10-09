@@ -19,6 +19,7 @@ import { hydrate } from '@/store/appStore';
 import { onDbBlocked, requestPersistentStorage } from '@/services/storage/db';
 import { isNativeHlsSupported } from '@/services/hls/hlsEngine';
 import { markPlatform } from '@/tv/platform';
+import { initProxyFromSettings } from '@/utils/proxy';
 import './index.css';
 
 // Before anything renders, not inside `bootstrap`: the answer decides whether
@@ -51,6 +52,9 @@ async function bootstrap(): Promise<void> {
 
   try {
     await hydrate();
+    // Initialize CORS proxy from stored settings
+    const settings = (await import('@/store/appStore')).appStore.getState().settings;
+    initProxyFromSettings(settings);
     // Fire-and-forget and dynamically imported: the poster and rating caches are
     // optional enhancements, so none of it should sit in the first-paint payload.
     void import('@/store/posterStore')

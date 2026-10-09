@@ -31,6 +31,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   autoFetchPosters: true,
   omdbApiKey: '',
   parentControls: false,
+  corsProxyUrl: '',
 };
 
 function readJson<T>(key: string, fallback: T): T {

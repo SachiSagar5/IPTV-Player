@@ -195,15 +195,14 @@ export interface AppSettings {
    */
   omdbApiKey: string;
   /**
-   * Hide entries whose `group-title` marks them as adult behind a PIN.
+   * Custom CORS proxy URL for mixed content (HTTPS page, HTTP stream).
    *
-   * Off by default: with this enabled those entries leave the ordinary Movies,
-   * Series, Live and Search pages entirely, and only appear in the Parent section
-   * once the PIN has been entered. See `src/utils/pin.ts` for what this does and
-   * does not protect against — it is a household convenience lock, not a
-   * security boundary.
+   * When set, this URL will be used instead of the built-in `/api/stream` endpoint.
+   * Format: `https://your-proxy.example.com/api/stream` or similar.
+   * The proxy must accept a `url` query parameter and forward the request with CORS headers.
+   * Empty by default (uses the built-in endpoint which works on Vercel).
    */
-  parentControls: boolean;
+  corsProxyUrl: string;
 }
 
 export type ParseProgressStage =

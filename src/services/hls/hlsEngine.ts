@@ -30,26 +30,7 @@ import {
   type StreamShape,
 } from './nativeSupport';
 import type { StreamSource } from '@/types';
-
-const PROXY_ENDPOINT = '/api/stream';
-
-function buildProxyUrl(targetUrl: string): string {
-  const encoded = encodeURIComponent(targetUrl);
-  return `${PROXY_ENDPOINT}?url=${encoded}`;
-}
-
-function shouldUseProxy(url: string): boolean {
-  if (typeof window === 'undefined') return false;
-  const isHttpsPage = window.location.protocol === 'https:';
-  const isHttpUrl = url.startsWith('http://');
-  if (isHttpsPage && isHttpUrl) return true;
-  return false;
-}
-
-function applyProxy(source: StreamSource): StreamSource {
-  if (!shouldUseProxy(source.url)) return source;
-  return { ...source, url: buildProxyUrl(source.url) };
-}
+import { getPlayableUrl } from '@/utils/proxy';
 import type {
   AudioTrackInfo,
   PlayerErrorInfo,
@@ -249,8 +230,7 @@ export class HlsEngine {
     // Apply proxy for mixed content and other cases where the browser cannot
     // directly fetch the stream. The proxy runs on the same origin (HTTPS) and
     // forwards the request to the target, adding CORS headers and handling Range.
-    const proxiedSource = applyProxy(source);
-    const effectiveUrl = proxiedSource.url;
+    const effectiveUrl = getPlayableUrl(source.url);
 
     // The engine follows the *URL*, not just the platform. Deciding by platform
     // alone sent every progressive file through hls.js, which parses its input as
@@ -263,7 +243,7 @@ export class HlsEngine {
       // For unsupported containers (MKV, AVI, etc.), try proxy first in case
       // the proxy does server-side transcoding. If the proxy returns a playable
       // format, it will work. Otherwise, show a clear error.
-      this.loadDirect(proxiedSource, options.startPosition, 'progressive');
+      this.loadDirect({ ...source, url: effectiveUrl }, options.startPosition, 'progressive');
       return;
     }
 
@@ -271,7 +251,7 @@ export class HlsEngine {
     // not just Safari. `<video>` is the only thing that can play them, and this
     // path also reports the native track list and the resume position.
     if (shape.kind === 'progressive') {
-      this.loadDirect(proxiedSource, options.startPosition, 'progressive');
+      this.loadDirect({ ...source, url: effectiveUrl }, options.startPosition, 'progressive');
       return;
     }
 
@@ -281,16 +261,16 @@ export class HlsEngine {
     // Deciding this *before* the dynamic import keeps Safari from paying for a
     // chunk it will never use.
     if (isNativeHlsSupported()) {
-      this.loadDirect(proxiedSource, options.startPosition, 'native');
+      this.loadDirect({ ...source, url: effectiveUrl }, options.startPosition, 'native');
       return;
     }
 
     if (shape.kind === 'unknown') {
-      this.loadUnknown(proxiedSource, options, token);
+      this.loadUnknown({ ...source, url: effectiveUrl }, options, token);
       return;
     }
 
-    void this.loadWithHlsJs(proxiedSource, options, token);
+    void this.loadWithHlsJs({ ...source, url: effectiveUrl }, options, token);
   }
 
   /**
@@ -309,8 +289,7 @@ export class HlsEngine {
     token: number,
   ): Promise<void> {
     if (this.destroyed || token !== this.loadToken) return;
-    const proxiedSource = applyProxy(source);
-    const probe = await sniffStream(proxiedSource.url);
+    const probe = await sniffStream(source.url);
     // The user moved on while the probe was in flight.
     if (this.destroyed || token !== this.loadToken) return;
 

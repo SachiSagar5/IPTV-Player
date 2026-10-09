@@ -944,6 +944,10 @@ export function updateSettings(patch: Partial<AppSettings>): void {
   const next = { ...appStore.getState().settings, ...patch };
   appStore.patch({ settings: next });
   saveSettings(next);
+  // Update CORS proxy endpoint if it changed
+  if (patch.corsProxyUrl !== undefined) {
+    void import('@/utils/proxy').then((m) => m.initProxyFromSettings(next));
+  }
 }
 
 export function completeOnboarding(): void {
