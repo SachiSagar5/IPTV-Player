@@ -5,7 +5,7 @@
  * or at runtime via the app settings (stored in localStorage).
  * Fallback is '/api/stream' for Vercel deployments.
  */
-const BUILD_TIME_PROXY = (import.meta as unknown as { env: { VITE_CORS_PROXY?: string } }).env?.VITE_CORS_PROXY ?? '/api/stream';
+const BUILD_TIME_PROXY = import.meta.env.VITE_CORS_PROXY ?? '/api/stream';
 
 let runtimeProxy: string | null = null;
 
