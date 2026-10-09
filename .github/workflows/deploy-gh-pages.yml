@@ -40,7 +40,7 @@ jobs:
         env:
           NODE_ENV: production
           GITHUB_PAGES: 'true'
-          VITE_CORS_PROXY: 'https://corsproxy.io/?url='
+          VITE_CORS_PROXY: 'https://api.allorigins.win/raw?url='
 
       - name: Verify build output
         run: |
