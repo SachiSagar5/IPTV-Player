@@ -193,7 +193,7 @@ export default function SeriesPage() {
           >
             {visible.map((series, i) => (
               <div key={series.id} role="listitem" className="min-w-0">
-                <SeriesCard series={series} index={i} total={visible.length} />
+                <SeriesCard series={series} index={i} total={visible.length} fill />
               </div>
             ))}
           </div>

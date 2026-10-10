@@ -130,9 +130,7 @@ export default function HomePage() {
   // this row would be the one card size on the page that did not change.
   const renderSeries = useCallback(
     (entry: SeriesGroup, index: number) => (
-      <div className={LARGE_CARD_WIDTH.poster}>
-        <SeriesCard series={entry} index={index} total={series.length} />
-      </div>
+      <SeriesCard series={entry} index={index} total={series.length} large />
     ),
     [series.length],
   );

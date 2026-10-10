@@ -17,18 +17,25 @@ import { RatingBadge } from '@/components/common/RatingBadge';
 import { useAppSelector } from '@/store/appStore';
 import { seriesPath } from '@/utils/routes';
 
+const SERIES_CARD_SIZES = {
+  w: 380,
+  h: 570,
+  className: 'w-[132px] sm:w-[164px] lg:w-[190px]',
+  largeWidth: 'w-[164px] sm:w-[210px] lg:w-[246px]',
+} as const;
+
 export interface SeriesCardProps {
   series: SeriesGroup;
   index?: number;
   total?: number;
+  large?: boolean;
+  fill?: boolean;
 }
 
-export const SeriesCard = memo(function SeriesCard({ series, index, total }: SeriesCardProps) {
+export const SeriesCard = memo(function SeriesCard({ series, index, total, large = false, fill = false }: SeriesCardProps) {
   const title = cleanTitle(series.name) || series.name;
   const resume = series.progress;
 
-  // Series groups inherit a logo from whichever episode had one. When none did,
-  // fall back to a fetched poster for the series title.
   const autoFetchPosters = useAppSelector((s) => s.settings.autoFetchPosters);
   const artwork = usePoster({
     kind: 'series',
@@ -38,8 +45,6 @@ export const SeriesCard = memo(function SeriesCard({ series, index, total }: Ser
     enabled: autoFetchPosters,
   });
   const remaining = resume && resume.duration > 0 ? 1 - resume.percent : 0;
-  // Same third-party opt-in as the poster above it: a rating needs the title
-  // matched to a work first.
   const rating = useItemRating({
     kind: 'series',
     title: series.name,
@@ -52,14 +57,16 @@ export const SeriesCard = memo(function SeriesCard({ series, index, total }: Ser
       data-nav
       tabIndex={0}
       aria-label={`${title}, ${series.episodeCount} episodes`}
-      className="card group/card block min-w-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400"
+      className={`card group/card relative block shrink-0 rounded-card outline-offset-4 ${
+        fill ? 'w-full' : large ? SERIES_CARD_SIZES.largeWidth : SERIES_CARD_SIZES.className
+      }`}
     >
       <div className="card-art relative overflow-hidden rounded-card bg-ink-850 shadow-card transition-[transform,box-shadow] duration-300 ease-settle group-hover/card:-translate-y-1.5 group-hover/card:shadow-lift group-focus-visible/card:-translate-y-1.5 group-focus-visible/card:shadow-lift">
         <LazyImage
           src={artwork}
           alt=""
-          width={380}
-          height={570}
+          width={SERIES_CARD_SIZES.w}
+          height={SERIES_CARD_SIZES.h}
           fit="cover"
           rounded="rounded-card"
         />

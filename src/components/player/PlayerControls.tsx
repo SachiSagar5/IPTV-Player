@@ -90,8 +90,26 @@ export const PlayerControls = memo(function PlayerControls({
   const barRef = useRef<HTMLDivElement>(null);
   const isLive = item.kind === 'live';
   const isFullscreen = false;
+  const [istTime, setIstTime] = useState<string>('');
 
   useDpadNavigation(barRef, { loop: false });
+
+  // Update IST time every minute
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      // IST is UTC+5:30
+      const ist = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
+      let hours = ist.getUTCHours();
+      const minutes = ist.getUTCMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12;
+      setIstTime(`${hours}:${minutes} ${ampm}`);
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const closeMenu = useCallback(() => setMenu('none'), []);
   const isPlaying = status === 'playing' || status === 'buffering';
@@ -143,6 +161,7 @@ export const PlayerControls = memo(function PlayerControls({
             <p className="truncate text-[11px] text-white/60">
               {item.group ? `${item.group} · ` : ''}
               {engineName === 'native' ? 'Native HLS' : engineName === 'hls.js' ? 'HLS.js' : 'Direct'}
+              {istTime && ` · ${istTime}`}
             </p>
             {/* Stream feature badges (HDR/Dolby/Codec/Resolution) */}
             {(streamFeatures.hdr !== 'none' ||
