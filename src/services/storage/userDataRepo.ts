@@ -218,6 +218,7 @@ export const favoritesRepo = {
 
 function toProgress(item: ContentItem, position: number, duration: number, watchedSec: number): PlaybackProgress {
   const safeDuration = duration > 0 ? duration : 0;
+  const safePosition = Number.isFinite(position) && position >= 0 ? position : 0;
   return {
     contentId: item.id,
     playlistId: item.playlistId,
@@ -228,9 +229,9 @@ function toProgress(item: ContentItem, position: number, duration: number, watch
     seriesId: item.seriesId,
     season: item.season,
     episode: item.episode,
-    position: Math.max(0, Math.floor(position)),
+    position: Math.max(0, Math.floor(safePosition)),
     duration: Math.floor(safeDuration),
-    percent: safeDuration > 0 ? Math.min(1, position / safeDuration) : 0,
+    percent: safeDuration > 0 && Number.isFinite(safePosition) ? Math.min(1, safePosition / safeDuration) : 0,
     updatedAt: Date.now(),
     watchedSec: Math.floor(watchedSec),
   };

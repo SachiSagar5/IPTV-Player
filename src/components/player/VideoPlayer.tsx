@@ -36,6 +36,8 @@ export interface VideoPlayerProps {
   onEnded?: (item: ContentItem) => void;
   onBack?: () => void;
   children?: ReactNode;
+  showControls?: () => void;
+  hideControls?: () => void;
 }
 
 const PROGRESS_SAVE_INTERVAL_MS = 5000;
@@ -87,18 +89,24 @@ export const VideoPlayer = memo(function VideoPlayer({
   const seekTo = useCallback((seconds: number) => {
     const media = mediaRef.current;
     if (!media) return;
+    if (!Number.isFinite(seconds)) return;
     if (media.duration === Infinity) {
       const bufferedEnd = media.buffered.length ? media.buffered.end(media.buffered.length - 1) : 0;
+      if (!Number.isFinite(bufferedEnd)) return;
       media.currentTime = Math.max(0, bufferedEnd - 5);
       return;
     }
-    media.currentTime = Math.max(0, Math.min(seconds, media.duration || 0));
+    const dur = media.duration;
+    if (!Number.isFinite(dur)) return;
+    media.currentTime = Math.max(0, Math.min(seconds, dur));
   }, []);
 
   const seekBy = useCallback((deltaSeconds: number) => {
     const media = mediaRef.current;
     if (!media) return;
-    seekTo(media.currentTime + deltaSeconds);
+    const ct = media.currentTime;
+    if (!Number.isFinite(ct)) return;
+    seekTo(ct + deltaSeconds);
   }, [seekTo]);
 
   const setVolume = useCallback((value: number) => {
@@ -251,12 +259,13 @@ export const VideoPlayer = memo(function VideoPlayer({
     };
 
     const onTimeUpdate = (): void => {
-      setCurrentTime(media.currentTime);
+      const ct = media.currentTime;
+      if (Number.isFinite(ct)) setCurrentTime(ct);
     };
 
     const onProgress = (): void => {
       const buf = media.buffered.length ? media.buffered.end(media.buffered.length - 1) : 0;
-      setBuffered(buf);
+      if (Number.isFinite(buf)) setBuffered(buf);
     };
 
     const onPlay = (): void => setStatus('playing');
@@ -413,6 +422,8 @@ export const VideoPlayer = memo(function VideoPlayer({
             codec: 'none',
             resolution: 'unknown',
           }}
+          onShowControls={showControls}
+          onHideControls={hideControls}
         />
 
         {status === 'idle' ? (
@@ -432,8 +443,10 @@ export const VideoPlayer = memo(function VideoPlayer({
 function persistProgress(media: HTMLMediaElement, item: ContentItem): void {
   if (item.kind === 'live') return;
   const duration = media.duration;
-  if (!Number.isFinite(duration) || duration <= 0) return;
   const position = media.currentTime;
+  // Guard against NaN/Infinity values that can occur after long pause/suspend
+  if (!Number.isFinite(duration) || duration <= 0) return;
+  if (!Number.isFinite(position) || position < 0) return;
   if (position < MIN_RESUME_SECONDS) return;
   void saveProgress(item, position, duration, 0);
 }

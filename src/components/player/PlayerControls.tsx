@@ -50,6 +50,8 @@ export interface PlayerControlsProps {
   audioTracks: Array<{ id: number; label: string; lang: string }>;
   currentAudioTrack: number;
   streamFeatures: StreamFeatures;
+  onShowControls?: () => void;
+  onHideControls?: () => void;
 }
 
 const RATES = [0.5, 0.75, 1, 1.25, 1.5, 2];
@@ -142,6 +144,7 @@ export const PlayerControls = memo(function PlayerControls({
       className={`absolute inset-x-0 bottom-0 z-20 select-none transition-opacity duration-200 ${
         visible ? 'opacity-100' : 'pointer-events-none opacity-0'
       }`}
+      onMouseEnter={() => onShowControls?.()}
       onMouseLeave={closeMenu}
     >
       {/* Scrim keeps controls legible over bright frames without a heavy blur. */}

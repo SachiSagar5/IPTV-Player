@@ -10,8 +10,9 @@
  *   C / V            subtitle track      < >   playback rate
  *   P                picture-in-picture  Esc   back (fullscreen first)
  *
- * Controls auto-hide after 3s of inactivity while playing, and reappear on any
- * key or pointer movement. When they are hidden, a single tap toggles them back.
+ * Controls auto-hide after 5s of inactivity while playing, and reappear on mouse
+ * movement only (not keyboard). When they are hidden, a single mouse move
+ * toggles them back.
  *
  * The one rule this hook adds for a remote: if focus is sitting on a control in
  * the bar, the D-pad owns the arrow keys and this hook does not. Otherwise a
@@ -22,7 +23,7 @@
  */
 import { useCallback, useEffect, useRef } from 'react';
 
-const AUTO_HIDE_MS = 3000;
+const AUTO_HIDE_MS = 5000;
 const SEEK_STEP = 10;
 
 /** The control bar, marked by `PlayerControls`. */
@@ -163,13 +164,7 @@ export function usePlayerKeys(handlers: Partial<PlayerKeyHandlers> = {}): UsePla
         default:
           return;
       }
-      h.setControlsVisible?.(true);
-      scheduleHide();
-    };
-
-    const onFocusIn = (): void => {
-      latest.current.setControlsVisible?.(true);
-      scheduleHide();
+      // Keyboard no longer shows controls - only mouse movement does
     };
 
     window.addEventListener('keydown', onKeyDown);
@@ -179,12 +174,9 @@ export function usePlayerKeys(handlers: Partial<PlayerKeyHandlers> = {}): UsePla
         latest.current.setControlsVisible?.(false);
       }
     });
-    document.addEventListener('focusin', onFocusIn);
 
     return () => {
       window.removeEventListener('keydown', onKeyDown);
-      document.removeEventListener('visibilitychange', onFocusIn);
-      document.removeEventListener('focusin', onFocusIn);
       clearTimer();
     };
   }, [clearTimer, scheduleHide]);
