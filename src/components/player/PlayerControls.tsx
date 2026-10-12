@@ -342,18 +342,20 @@ export const PlayerControls = memo(function PlayerControls({
           ) : null}
 
           {audioTracks.length > 0 ? (
-            <MenuButton
-              icon="audio"
-              label={`Audio: ${activeAudioLabel}`}
-              active={menu === 'audio'}
-              onClick={() => setMenu(menu === 'audio' ? 'none' : 'audio')}
-            />
-            {audioTracks.length > 1 && (
-              <span className="hidden sm:inline-flex items-center gap-1 px-2 text-[10px] text-accent-400/80">
-                <span className="h-1.5 w-1.5 rounded-full bg-accent-500 animate-pulse" />
-                {audioTracks.length} tracks
-              </span>
-            )}
+            <>
+              <MenuButton
+                icon="audio"
+                label={`Audio: ${activeAudioLabel}`}
+                active={menu === 'audio'}
+                onClick={() => setMenu(menu === 'audio' ? 'none' : 'audio')}
+              />
+              {audioTracks.length > 1 && (
+                <span className="hidden sm:inline-flex items-center gap-1 px-2 text-[10px] text-accent-400/80">
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent-500 animate-pulse" />
+                  {audioTracks.length} tracks
+                </span>
+              )}
+            </>
           ) : null}
 
           <ControlButton
