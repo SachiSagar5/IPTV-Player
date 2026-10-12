@@ -93,10 +93,25 @@ export const Hero = memo(function Hero({
       {artCss ? (
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-30 scale-110 opacity-45 blur-3xl saturate-160"
+          className="absolute inset-0 -z-30 scale-110 opacity-45 blur-3xl saturate-160 animate-drift-a"
           style={{ backgroundImage: artCss, backgroundSize: 'cover', backgroundPosition: 'center 22%' }}
         />
       ) : null}
+
+      {/* Subtle accent particles for depth */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-25 opacity-30"
+        style={{
+          backgroundImage: `
+            radial-gradient(circle at 20% 30%, rgb(var(--accent-400-rgb) / 0.15) 1px, transparent 1px),
+            radial-gradient(circle at 80% 70%, rgb(var(--accent-tertiary-rgb) / 0.1) 1px, transparent 1px),
+            radial-gradient(circle at 40% 80%, rgb(var(--accent-secondary-rgb) / 0.08) 1px, transparent 1px)
+          `,
+          backgroundSize: '300px 300px, 400px 400px, 500px 500px',
+          animation: 'drift-particles 60s linear infinite'
+        }}
+      />
 
       {/* 2. The poster itself, bleeding off the right edge and masked into the wash.
           A single slow push-in over 22s gives the hero a sense of life without
@@ -115,24 +130,36 @@ export const Hero = memo(function Hero({
         />
       ) : null}
 
+      {/* Glowing accent line along the poster edge */}
+      {artCss ? (
+        <div
+          aria-hidden="true"
+          className="absolute right-[68%] top-0 -z-15 h-full w-px md:right-[32%]"
+          style={{
+            background: `linear-gradient(180deg, transparent, rgb(var(--accent-400-rgb) / 0.6), transparent)`,
+            opacity: 0.5,
+          }}
+        />
+      ) : null}
+
       {/* 3. Scrims: left for the headline, bottom to melt into the first row. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-gradient-to-r from-ink-950 from-5% via-ink-950/90 to-ink-950/20"
+        className="absolute inset-0 -z-10 bg-gradient-to-r from-ink-950 from-5% via-ink-950/95 to-ink-950/15"
       />
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 top-0 -z-10 h-36 bg-gradient-to-b from-ink-950/90 to-transparent"
+        className="absolute inset-x-0 top-0 -z-10 h-36 bg-gradient-to-b from-ink-950/95 to-transparent"
       />
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-gradient-to-t from-ink-950 via-ink-950/45 to-transparent"
+        className="absolute inset-0 -z-10 bg-gradient-to-t from-ink-950 via-ink-950/50 to-transparent"
       />
       {/* Corner vignette: pulls the eye off the very edges of a wide screen, where
           the poster crop otherwise leaves a hard seam. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 shadow-[inset_0_0_140px_40px_rgba(5,6,9,0.75)]"
+        className="absolute inset-0 -z-10 shadow-[inset_0_0_160px_60px_rgba(5,6,9,0.8)]"
       />
 
       <div className="flex flex-col gap-7 px-4 pt-28 pb-12 sm:pt-32 md:flex-row md:items-end md:gap-10 md:px-8 md:pt-40 md:pb-16">
@@ -165,6 +192,12 @@ export const Hero = memo(function Hero({
               {title}
             </span>
           </h1>
+
+          {/* Subtitle gradient underline */}
+          <div
+            className="animate-rise h-px w-24 max-w-[120px] bg-gradient-to-r from-accent-400 via-accent-500 to-transparent rounded-full"
+            style={{ animationDelay: '80ms' }}
+          />
 
           {meta.length > 0 ? (
             <div

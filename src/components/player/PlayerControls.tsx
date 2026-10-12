@@ -141,16 +141,21 @@ export const PlayerControls = memo(function PlayerControls({
     <div
       ref={barRef}
       data-player-controls=""
-      className={`absolute inset-x-0 bottom-0 z-20 select-none transition-opacity duration-200 ${
+      className={`absolute inset-x-0 bottom-0 z-20 select-none transition-opacity duration-300 ${
         visible ? 'opacity-100' : 'pointer-events-none opacity-0'
       }`}
       onMouseEnter={() => onShowControls?.()}
       onMouseLeave={closeMenu}
     >
-      {/* Scrim keeps controls legible over bright frames without a heavy blur. */}
+      {/* Enhanced scrim with accent glow at top edge */}
       <div
-        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"
         aria-hidden="true"
+      />
+      {/* Accent glow line at top of controls */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-accent-400/60 to-transparent"
       />
 
       <div className="relative px-3 pt-16 pb-3 sm:px-5 sm:pb-4">
@@ -207,9 +212,9 @@ export const PlayerControls = memo(function PlayerControls({
           </span>
           <div className="relative flex-1">
             {/* Buffered bar */}
-            <div className="pointer-events-none absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 overflow-hidden rounded-full bg-white/25">
+            <div className="pointer-events-none absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-full bg-white/20">
               <div
-                className="h-full bg-white/40"
+                className="h-full bg-white/30"
                 style={{
                   width: `${duration > 0 ? Math.min(100, (buffered / duration) * 100) : 0}%`,
                 }}
@@ -217,28 +222,45 @@ export const PlayerControls = memo(function PlayerControls({
             </div>
             {seekingDisabled ? (
               <div className="flex h-4 items-center">
-                <div className="h-1 w-full rounded-full bg-accent-500/70" />
+                <div className="h-1.5 w-full rounded-full bg-gradient-to-r from-accent-500 to-accent-300" />
               </div>
             ) : (
-              <input
-                type="range"
-                min={0}
-                max={Math.max(1, duration)}
-                step={0.1}
-                value={Math.min(currentTime, duration || 0)}
-                data-nav
-                onChange={(event) => onSeek(Number(event.target.value))}
-                aria-label="Seek"
-                aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
-                className="relative z-10 h-4 w-full cursor-pointer appearance-none bg-transparent
-                  [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:rounded-full
-                  [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-accent-400
-                  [&::-webkit-slider-runnable-track]:h-1 [&::-webkit-slider-runnable-track]:rounded-full
-                  [&::-webkit-slider-thumb]:mt-[-5px] [&::-webkit-slider-thumb]:h-3.5
-                  [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none
-                  [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-400
-                  [&::-webkit-slider-thumb]:shadow-[0_0_0_3px_rgba(0,0,0,0.45)]"
-              />
+              <>
+                <input
+                  type="range"
+                  min={0}
+                  max={Math.max(1, duration)}
+                  step={0.1}
+                  value={Math.min(currentTime, duration || 0)}
+                  data-nav
+                  onChange={(event) => onSeek(Number(event.target.value))}
+                  aria-label="Seek"
+                  aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
+                  className="relative z-10 h-4 w-full cursor-pointer appearance-none bg-transparent
+                    [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full
+                    [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-white
+                    [&::-moz-range-thumb]:shadow-[0_0_8px_rgb(var(--accent-400-rgb)/0.6)]
+                    [&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-runnable-track]:rounded-full
+                    [&::-webkit-slider-runnable-track]:bg-gradient-to-r
+                    [&::-webkit-slider-runnable-track]:from-accent-500
+                    [&::-webkit-slider-runnable-track]:via-accent-400
+                    [&::-webkit-slider-runnable-track]:to-accent-300
+                    [&::-webkit-slider-thumb]:mt-[-5px] [&::-webkit-slider-thumb]:h-4
+                    [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none
+                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white
+                    [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgb(var(--accent-400-rgb)/0.7)]
+                    group-hover/bar:[&::-webkit-slider-thumb]:scale-125
+                    group-focus-visible/bar:[&::-webkit-slider-thumb]:scale-125
+                    transition-transform duration-150"
+                />
+                {/* Progress glow on hover */}
+                <div
+                  className="pointer-events-none absolute top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-gradient-to-r from-accent-500 via-accent-400 to-accent-300 opacity-0 group-hover/bar:opacity-100 transition-opacity duration-200"
+                  style={{
+                    width: `${duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0}%`,
+                  }}
+                />
+              </>
             )}
           </div>
           <span className="w-14 shrink-0 font-mono text-[11px] tabular-nums text-white/80">
@@ -290,13 +312,21 @@ export const PlayerControls = memo(function PlayerControls({
               value={muted ? 0 : volume}
               onChange={(event) => onVolume(Number(event.target.value))}
               aria-label="Volume"
-              className="hidden h-1 w-0 cursor-pointer appearance-none rounded-full bg-white/30 transition-all duration-200 group-hover/vol:w-20 group-hover/vol:mr-2 group-focus-within/vol:w-20 group-focus-within/vol:mr-2 sm:block
-                [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:rounded-full
+              className="hidden h-1 w-0 cursor-pointer appearance-none rounded-full bg-white/20 transition-all duration-200 group-hover/vol:w-20 group-hover/vol:mr-2 group-focus-within/vol:w-20 group-focus-within/vol:mr-2 sm:block
+                [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:rounded-full
                 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-white
-                [&::-webkit-slider-runnable-track]:h-1 [&::-webkit-slider-runnable-track]:rounded-full
-                [&::-webkit-slider-thumb]:mt-[-5px] [&::-webkit-slider-thumb]:h-3
-                [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none
-                [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+                [&::-moz-range-thumb]:shadow-[0_0_8px_rgb(var(--accent-400-rgb)/0.6)]
+                [&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-runnable-track]:rounded-full
+                [&::-webkit-slider-runnable-track]:bg-gradient-to-r
+                [&::-webkit-slider-runnable-track]:from-accent-500
+                [&::-webkit-slider-runnable-track]:to-accent-300
+                [&::-webkit-slider-thumb]:mt-[-5px] [&::-webkit-slider-thumb]:h-3.5
+                [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none
+                [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white
+                [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgb(var(--accent-400-rgb)/0.7)]
+                group-hover/vol:[&::-webkit-slider-thumb]:scale-125
+                group-focus-within/vol:[&::-webkit-slider-thumb]:scale-125
+                transition-transform duration-150"
             />
           </div>
 
@@ -446,12 +476,12 @@ function ControlButton({
       title={label}
       aria-label={label}
       data-nav
-      className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
+      className={`flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400 ${
         primary
-          ? 'bg-white text-black hover:bg-white/85'
+          ? 'bg-gradient-to-br from-accent-300 to-accent-500 text-ink-1000 shadow-glow hover:from-accent-200 hover:to-accent-400 hover:shadow-glow-lg'
           : active
-            ? 'bg-white/20 text-white'
-            : 'text-white/85 hover:bg-white/10 hover:text-white'
+          ? 'bg-white/20 text-white shadow-[0_0_16px_rgb(var(--accent-400-rgb)/0.4)]'
+          : 'text-white/85 hover:bg-white/10 hover:text-white'
       } ${className}`}
     >
       <Icon name={icon} size={20} filled={filled} />
@@ -480,8 +510,10 @@ function MenuButton({
       aria-label={label}
       aria-expanded={active}
       data-nav
-      className={`inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition-colors ${
-        active ? 'bg-white/20 text-white' : 'text-white/85 hover:bg-white/10 hover:text-white'
+      className={`inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400 ${
+        active
+          ? 'bg-gradient-to-r from-accent-500/30 to-accent-600/30 text-mist-50 shadow-[0_0_12px_rgb(var(--accent-400-rgb)/0.3)_inset]'
+          : 'text-white/85 hover:bg-white/10 hover:text-white'
       }`}
     >
       <Icon name={icon} size={18} />
@@ -515,7 +547,7 @@ function PlayerMenu({
       ref={menuRef}
       role="menu"
       aria-label={label}
-      className="animate-scale-in absolute right-3 bottom-20 z-30 max-h-[50vh] min-w-44 origin-bottom-right overflow-y-auto rounded-lg border border-white/10 bg-black/85 p-1 shadow-lift backdrop-blur-md sm:right-5"
+      className="animate-scale-in absolute right-3 bottom-20 z-30 max-h-[50vh] min-w-44 origin-bottom-right overflow-y-auto rounded-xl border border-white/10 bg-gradient-to-b from-black/95 to-black/85 p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_30px_rgb(var(--accent-400-rgb)/0.15)] backdrop-blur-xl sm:right-5"
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
           event.stopPropagation();
@@ -523,9 +555,12 @@ function PlayerMenu({
         }
       }}
     >
-      <p className="px-3 py-1.5 text-[10px] font-bold tracking-[0.14em] text-white/45 uppercase">
-        {label}
-      </p>
+      <div className="flex items-center gap-2 px-3 py-2 mb-1">
+        <div className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-accent-500 to-accent-300" />
+        <p className="text-[10px] font-bold tracking-[0.14em] text-white/70 uppercase">
+          {label}
+        </p>
+      </div>
       {children}
     </div>
   );
@@ -539,15 +574,15 @@ function Badge({
   variant: 'hdr' | 'dolby' | 'codec' | 'resolution';
 }) {
   const variantStyles: Record<string, string> = {
-    hdr: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-    dolby: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-    codec: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-    resolution: 'bg-green-500/20 text-green-400 border-green-500/30',
+    hdr: 'bg-gradient-to-r from-amber-500/30 to-amber-600/20 text-amber-300 border-amber-500/40',
+    dolby: 'bg-gradient-to-r from-blue-500/30 to-blue-600/20 text-blue-300 border-blue-500/40',
+    codec: 'bg-gradient-to-r from-purple-500/30 to-purple-600/20 text-purple-300 border-purple-500/40',
+    resolution: 'bg-gradient-to-r from-green-500/30 to-green-600/20 text-green-300 border-green-500/40',
   };
 
   return (
     <span
-      className={`inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold tracking-[0.1em] uppercase rounded border ${
+      className={`inline-flex items-center px-2 py-0.5 text-[9px] font-bold tracking-[0.1em] uppercase rounded-full border backdrop-blur-sm shadow-[0_0_10px_rgba(0,0,0,0.3)] ${
         variantStyles[variant] ?? variantStyles.hdr
       }`}
     >
@@ -574,11 +609,13 @@ function MenuItem({
       aria-checked={active}
       data-nav
       onClick={onClick}
-      className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors ${
-        active ? 'text-accent-300' : 'text-white/85 hover:bg-white/10'
+      className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400 ${
+        active
+          ? 'bg-gradient-to-r from-accent-500/20 to-accent-600/10 text-accent-200 shadow-[0_0_10px_rgb(var(--accent-400-rgb)/0.2)_inset]'
+          : 'text-white/85 hover:bg-white/10 hover:text-white'
       }`}
     >
-      <Icon name={active ? 'check' : 'minus'} size={14} className={active ? '' : 'opacity-0'} />
+      <Icon name={active ? 'check' : 'minus'} size={14} className={active ? 'text-accent-400' : 'text-white/30'} />
       <span className="min-w-0 flex-1 truncate">{label}</span>
       {hint ? <span className="shrink-0 text-[10px] text-white/40">{hint}</span> : null}
     </button>

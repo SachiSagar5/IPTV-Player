@@ -19,14 +19,21 @@ export const PageHeader = memo(function PageHeader({
   children,
 }: PageHeaderProps) {
   return (
-    <header className="px-4 pt-7 pb-5 md:px-8 md:pt-10">
-      <div className="animate-rise flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
+    <header className="px-4 pt-7 pb-5 md:px-8 md:pt-10 relative">
+      {/* Ambient glow behind title */}
+      <div
+        aria-hidden="true"
+        className="absolute top-1/2 left-4 -translate-y-1/2 h-24 w-24 md:left-8 md:w-32 rounded-full bg-gradient-to-r from-accent-500/10 to-transparent blur-2xl opacity-50 animate-drift-b"
+      />
+      <div className="animate-rise relative flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 relative">
           {/* Accent rule above the title gives every page the same top-of-page
               anchor the content rows have, so scrolling between pages reads as
               a change of section rather than a change of document. */}
-          <span aria-hidden="true" className="rule-accent mb-3 block h-px w-14 rounded-full" />
-          <h1 className="text-display text-2xl font-bold text-mist-50 md:text-4xl">{title}</h1>
+          <span aria-hidden="true" className="rule-accent mb-3 block h-px w-14 rounded-full transition-all duration-500 group-hover/row:w-20" />
+          <h1 className="text-display text-2xl font-bold text-mist-50 md:text-4xl bg-gradient-to-r from-mist-50 via-accent-200 to-mist-50 bg-clip-text text-transparent">
+            {title}
+          </h1>
           {subtitle ? <div className="mt-2 text-sm text-mist-400">{subtitle}</div> : null}
         </div>
         {actions ? <div className="mt-1 flex shrink-0 items-center gap-2">{actions}</div> : null}

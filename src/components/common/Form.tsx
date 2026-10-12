@@ -186,10 +186,7 @@ export function SegmentedControl<T extends string | number>({
     <div
       role="tablist"
       aria-label={ariaLabel}
-      // `p-0.5` + a 22px button + the border lands the whole control at 28px,
-      // against a 24px switch in the same settings column. At `p-1`/`h-7` it was
-      // 38px and visibly overhung the switches it sits beside.
-      className={`inline-flex gap-1 rounded-lg border border-ink-700 bg-ink-900 p-0.5 ${className}`}
+      className={`inline-flex gap-1 rounded-lg border border-ink-700 bg-ink-900/80 p-0.5 backdrop-blur-sm ${className}`}
     >
       {options.map((option) => {
         const selected = option.value === value;
@@ -201,11 +198,11 @@ export function SegmentedControl<T extends string | number>({
             aria-selected={selected}
             onClick={() => onChange(option.value)}
             data-nav={dpadStops || undefined}
-            className={`inline-flex items-center gap-1.5 rounded-md font-medium whitespace-nowrap transition-colors ${
+            className={`inline-flex items-center gap-1.5 rounded-md font-medium whitespace-nowrap transition-all duration-200 hover:scale-[1.02] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400 ${
               size === 'sm' ? 'h-[1.375rem] px-2.5 text-xs' : 'h-8 px-3 text-sm'
             } ${
               selected
-                ? 'bg-ink-700 text-mist-50 shadow-[0_1px_0_rgba(255,255,255,0.06)_inset]'
+                ? 'bg-gradient-to-r from-accent-500/30 to-accent-600/30 text-mist-50 shadow-[0_0_12px_rgb(var(--accent-400-rgb)/0.3)_inset,0_1px_0_rgba(255,255,255,0.06)_inset]'
                 : 'text-mist-400 hover:bg-ink-800 hover:text-mist-200'
             }`}
           >
@@ -243,10 +240,10 @@ export const FilterChip = memo(function FilterChip({
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-xs font-medium whitespace-nowrap transition-colors duration-150 ${
+      className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-xs font-medium whitespace-nowrap transition-all duration-200 hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400 ${
         active
-          ? 'border-accent-500 bg-accent-500 text-ink-1000'
-          : 'border-ink-600 bg-ink-850 text-mist-200 hover:border-ink-500 hover:bg-ink-800'
+          ? 'border-accent-500 bg-accent-500 text-ink-1000 shadow-[0_0_16px_rgb(var(--accent-400-rgb)/0.5)]'
+          : 'border-ink-600 bg-ink-850 text-mist-200 hover:border-ink-500 hover:bg-ink-800 hover:text-mist-50'
       }`}
     >
       {active ? <Icon name="check" size={13} /> : icon ? <Icon name={icon} size={13} /> : null}

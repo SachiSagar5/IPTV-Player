@@ -29,18 +29,21 @@ const VARIANTS: Record<Variant, string> = {
   // ~4.7:1 against near-black, and every other stop is far clear of it. Push the
   // bottom stop any darker (accent-600 is ~3.3:1) and the label stops passing.
   primary:
-    'bg-gradient-to-b from-accent-300 to-accent-500 text-ink-1000 shadow-glow ' +
-    'hover:from-accent-200 hover:to-accent-400 hover:shadow-glow-lg active:from-accent-500 active:to-accent-600 ' +
-    'border border-accent-300/40',
+    'bg-gradient-to-br from-accent-300 via-accent-400 to-accent-500 text-ink-1000 shadow-glow ' +
+    'hover:from-accent-200 hover:via-accent-300 hover:to-accent-400 hover:shadow-glow-lg ' +
+    'active:from-accent-500 active:via-accent-600 active:to-accent-700 active:scale-[0.98] ' +
+    'border border-accent-300/40 transition-all duration-200',
   secondary:
-    'bg-gradient-to-b from-ink-750 to-ink-800 text-mist-50 border border-ink-600 ' +
-    'hover:border-ink-500 hover:from-ink-700 hover:to-ink-750 active:from-ink-800',
-  ghost: 'bg-transparent text-mist-300 hover:bg-ink-800 hover:text-mist-50',
+    'bg-gradient-to-br from-ink-750 via-ink-750 to-ink-800 text-mist-50 border border-ink-600 ' +
+    'hover:border-ink-500 hover:from-ink-700 hover:via-ink-700 hover:to-ink-750 ' +
+    'active:from-ink-800 active:to-ink-850 active:scale-[0.98] transition-all duration-200',
+  ghost: 'bg-transparent text-mist-300 hover:bg-ink-800 hover:text-mist-50 active:bg-ink-850 active:scale-[0.98] transition-all duration-200',
   subtle:
     'bg-ink-850/80 text-mist-200 border border-ink-700 hover:bg-ink-800 hover:text-mist-50 ' +
-    'backdrop-blur-sm',
+    'active:bg-ink-750 active:scale-[0.98] backdrop-blur-sm transition-all duration-200',
   danger:
-    'bg-live-500/12 text-live-400 border border-live-500/35 hover:bg-live-500/22 hover:border-live-500/50',
+    'bg-live-500/12 text-live-400 border border-live-500/35 hover:bg-live-500/22 hover:border-live-500/50 ' +
+    'active:bg-live-500/30 active:scale-[0.98] transition-all duration-200',
 };
 
 /* Shimmer variant for primary CTAs — a slow specular pass across the gradient.

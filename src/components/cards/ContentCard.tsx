@@ -155,7 +155,9 @@ export const ContentCard = memo(function ContentCard({
         fill ? 'w-full' : large ? LARGE_CARD_WIDTH[variant] : size.className
       } ${className}`}
     >
-      <div className="card-art card-hairline relative overflow-hidden rounded-card bg-ink-850 shadow-card transition-[transform,box-shadow] duration-300 ease-settle group-hover/card:-translate-y-2 group-hover/card:shadow-lift group-focus-visible/card:-translate-y-2 group-focus-visible/card:shadow-lift">
+      <div className="card-art card-hairline relative overflow-hidden rounded-card bg-ink-850 shadow-card transition-[transform,box-shadow] duration-500 ease-settle group-hover/card:-translate-y-3 group-hover/card:shadow-lift group-focus-visible/card:-translate-y-3 group-focus-visible/card:shadow-lift">
+        {/* Sheen effect on hover */}
+        <div className="absolute inset-0 sheen pointer-events-none" aria-hidden="true" />
         <LazyImage
           src={artwork}
           alt={displayTitle}
@@ -210,11 +212,14 @@ export const ContentCard = memo(function ContentCard({
 
         {/* Resume bar. */}
         {progressPercent > 0 ? (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1 bg-black/60">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1.5 bg-black/60 group-hover/card:h-2 group-focus-visible/card:h-2 transition-[height] duration-200">
             <div
-              className="h-full bg-gradient-to-r from-accent-500 to-accent-300 shadow-[0_0_8px_rgb(var(--accent-400-rgb)/0.6)]"
+              className="h-full relative bg-gradient-to-r from-accent-500 via-accent-400 to-accent-300 shadow-[0_0_12px_rgb(var(--accent-400-rgb)/0.7)]"
               style={{ width: `${progressPercent}%` }}
-            />
+            >
+              {/* Shimmer on progress bar */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
+            </div>
           </div>
         ) : null}
 
@@ -222,9 +227,9 @@ export const ContentCard = memo(function ContentCard({
             The full-bleed scrim fades without scaling (scaling it would pull its
             own edges off the artwork and expose a ring of bare card); only the
             button itself pops. */}
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/75 via-black/10 to-transparent opacity-0 transition-opacity duration-200 group-hover/card:opacity-100 group-focus-visible/card:opacity-100">
-          <span className="flex h-11 w-11 scale-75 items-center justify-center rounded-full border border-white/20 bg-white/95 text-ink-1000 opacity-0 shadow-lift transition-[transform,opacity] duration-300 ease-present group-hover/card:scale-100 group-hover/card:opacity-100 group-focus-visible/card:scale-100 group-focus-visible/card:opacity-100">
-            <Icon name="play" size={19} filled />
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 group-focus-visible/card:opacity-100">
+          <span className="flex h-14 w-14 scale-75 items-center justify-center rounded-full border border-white/20 bg-white/95 text-ink-1000 opacity-0 shadow-[0_0_30px_rgb(var(--accent-400-rgb)/0.5)] transition-[transform,opacity] duration-400 ease-present group-hover/card:scale-100 group-hover/card:opacity-100 group-focus-visible/card:scale-100 group-focus-visible/card:opacity-100">
+            <Icon name="play" size={24} filled />
           </span>
         </div>
 
@@ -237,10 +242,10 @@ export const ContentCard = memo(function ContentCard({
             aria-pressed={favorite}
             aria-label={favorite ? `Remove ${displayTitle} from My List` : `Add ${displayTitle} to My List`}
             title={favorite ? 'Remove from My List' : 'Add to My List'}
-            className={`absolute top-1.5 right-1.5 flex h-7 w-7 items-center justify-center rounded-md border backdrop-blur-sm transition-all duration-200 focus-visible:opacity-100 ${
+            className={`absolute top-1.5 right-1.5 flex h-7 w-7 items-center justify-center rounded-md border backdrop-blur-sm transition-all duration-300 focus-visible:opacity-100 group-hover/card:scale-110 ${
               favorite
-                ? 'border-accent-400/60 bg-accent-500/90 text-ink-1000 opacity-100 shadow-[0_0_12px_rgb(var(--accent-400-rgb)/0.4)]'
-                : 'border-white/15 bg-black/60 text-mist-200 opacity-0 group-hover/card:opacity-100 focus-visible:opacity-100'
+                ? 'border-accent-400/60 bg-accent-500/90 text-ink-1000 opacity-100 shadow-[0_0_16px_rgb(var(--accent-400-rgb)/0.5)] hover:shadow-[0_0_24px_rgb(var(--accent-400-rgb)/0.7)]'
+                : 'border-white/15 bg-black/60 text-mist-200 opacity-0 group-hover/card:opacity-100 group-hover/card:scale-110 focus-visible:opacity-100 focus-visible:scale-110 hover:border-accent-500/50 hover:bg-accent-500/20 hover:text-accent-300'
             }`}
           >
             <Icon name={favorite ? 'check' : 'plus'} size={14} />

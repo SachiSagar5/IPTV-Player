@@ -128,7 +128,7 @@ export function RowShell<T extends RowItem>({
       aria-labelledby={`row-${title}`}
     >
       <div className="mb-4 flex items-end justify-between gap-4 px-4 md:px-8">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 relative">
           <h2
             id={`row-${title}`}
             className="flex min-w-0 items-center gap-3 text-[15px] font-semibold tracking-tight text-mist-50 md:text-lg"
@@ -137,10 +137,10 @@ export function RowShell<T extends RowItem>({
                 page reads as a stack of sections rather than a list of strings. */}
             <span
               aria-hidden="true"
-              className="rule-accent h-4 w-1 shrink-0 rounded-full transition-[height] duration-300 group-hover/row:h-5"
+              className="rule-accent h-4 w-1 shrink-0 rounded-full transition-[height,width] duration-300 group-hover/row:h-5 group-hover/row:w-2"
             />
             {icon ? (
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-500/12 text-accent-400">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-accent-500/20 to-accent-600/20 text-accent-400">
                 <Icon name={icon as import('@/components/common/Icon').IconName} size={16} />
               </span>
             ) : null}
@@ -165,6 +165,11 @@ export function RowShell<T extends RowItem>({
               </span>
             ) : null}
           </h2>
+          {/* Subtle accent line under the row header */}
+          <div
+            aria-hidden="true"
+            className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-accent-500/30 to-transparent opacity-0 group-hover/row:opacity-100 transition-opacity duration-300"
+          />
         </div>
         {href ? (
           <Link
