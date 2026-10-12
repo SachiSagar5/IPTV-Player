@@ -41,6 +41,8 @@ export interface PlayerKeyHandlers {
   onBack: () => void;
   onCycleFitMode: () => void;
   setControlsVisible: (visible: boolean) => void;
+  /** When true, auto-hide timer is scheduled. When false (paused/buffering), controls stay visible. */
+  isPlaying?: boolean;
 }
 
 export interface UsePlayerKeysResult {
@@ -61,6 +63,8 @@ export function usePlayerKeys(handlers: Partial<PlayerKeyHandlers> = {}): UsePla
   }, []);
 
   const scheduleHide = useCallback(() => {
+    // Only auto-hide when video is actually playing
+    if (!latest.current.isPlaying) return;
     clearTimer();
     hideTimer.current = setTimeout(() => {
       const active = document.activeElement as HTMLElement | null;
@@ -78,6 +82,13 @@ export function usePlayerKeys(handlers: Partial<PlayerKeyHandlers> = {}): UsePla
     clearTimer();
     latest.current.setControlsVisible?.(false);
   }, [clearTimer]);
+
+  // Clear auto-hide timer when video stops playing (paused, buffering, ended)
+  useEffect(() => {
+    if (!latest.current.isPlaying) {
+      clearTimer();
+    }
+  }, [latest.current.isPlaying, clearTimer]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {

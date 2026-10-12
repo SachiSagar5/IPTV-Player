@@ -74,6 +74,7 @@ export const VideoPlayer = memo(function VideoPlayer({
   const introSkippedRef = useRef(false);
   const playableUrl = getPlayableUrl(item.streams[0]?.url ?? '');
   const resumeRef = useRef(startPosition);
+  const mouseMoveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fullscreen = useFullscreen(videoRef);
   const pip = usePictureInPicture(mediaRef);
@@ -178,7 +179,17 @@ export const VideoPlayer = memo(function VideoPlayer({
     onBack: exit,
     onCycleFitMode: cycleFitMode,
     setControlsVisible,
+    isPlaying: status === 'playing',
   });
+
+  // Debounced showControls for mouse move — only trigger after 150ms of no movement
+  // This prevents micro-movements from constantly resetting the auto-hide timer
+  const debouncedShowControls = useCallback(() => {
+    if (mouseMoveTimerRef.current) clearTimeout(mouseMoveTimerRef.current);
+    mouseMoveTimerRef.current = setTimeout(() => {
+      showControls();
+    }, 150);
+  }, [showControls]);
 
   // Initialize HlsEngine
   useEffect(() => {
@@ -353,6 +364,13 @@ export const VideoPlayer = memo(function VideoPlayer({
     setEngineName(engineRef.current?.engineName ?? 'none');
   }, []);
 
+  // Cleanup debounced mouse move timer on unmount
+  useEffect(() => {
+    return () => {
+      if (mouseMoveTimerRef.current) clearTimeout(mouseMoveTimerRef.current);
+    };
+  }, []);
+
   useEffect(() => {
     playerStore.patch({ fullscreen: fullscreen.isFullscreen });
   }, [fullscreen.isFullscreen]);
@@ -365,7 +383,7 @@ export const VideoPlayer = memo(function VideoPlayer({
       <div
         ref={videoRef}
         className="relative flex-1 bg-black"
-        onMouseMove={showControls}
+        onMouseMove={debouncedShowControls}
         onMouseLeave={hideControls}
         onTouchStart={showControls}
       >
