@@ -348,6 +348,12 @@ export const PlayerControls = memo(function PlayerControls({
               active={menu === 'audio'}
               onClick={() => setMenu(menu === 'audio' ? 'none' : 'audio')}
             />
+            {audioTracks.length > 1 && (
+              <span className="hidden sm:inline-flex items-center gap-1 px-2 text-[10px] text-accent-400/80">
+                <span className="h-1.5 w-1.5 rounded-full bg-accent-500 animate-pulse" />
+                {audioTracks.length} tracks
+              </span>
+            )}
           ) : null}
 
           <ControlButton
@@ -410,7 +416,8 @@ export const PlayerControls = memo(function PlayerControls({
       {menu === 'audio' && audioTracks.length > 0 ? (
         <PlayerMenu label="Audio" onClose={closeMenu}>
           <MenuItem
-            label="Default"
+            label="Default (Auto)"
+            hint="Let the player choose the best audio track"
             active={currentAudioTrack < 0}
             onClick={() => {
               onAudioTrack(-1);
@@ -421,7 +428,7 @@ export const PlayerControls = memo(function PlayerControls({
             <MenuItem
               key={track.id}
               label={track.label}
-              hint={track.lang && track.lang !== track.label ? track.lang : undefined}
+              hint={track.lang && track.lang !== track.label ? `Language: ${track.lang.toUpperCase()}` : undefined}
               active={currentAudioTrack === track.id}
               onClick={() => {
                 onAudioTrack(track.id);
