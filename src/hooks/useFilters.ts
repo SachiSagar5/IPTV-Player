@@ -15,7 +15,7 @@ import { QUERY } from '@/utils/routes';
 import { isAdultItem } from '@/services/m3u/adult';
 import { useAppSelector } from '@/store/appStore';
 
-const VALID_SORTS: ReadonlySet<string> = new Set(['title', 'recent', 'year', 'added']);
+const VALID_SORTS: ReadonlySet<string> = new Set(['title', 'recent', 'year', 'added', 'daily']);
 
 export interface UseFiltersOptions {
   /** Restrict the candidate set (e.g. only movies on the Movies page). */

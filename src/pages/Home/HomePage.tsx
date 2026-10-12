@@ -30,6 +30,7 @@ import {
   useAppSelector,
 } from '@/store/appStore';
 import { formatCount } from '@/utils/format';
+import { deterministicShuffle } from '@/utils/filters';
 import { ROUTES } from '@/utils/routes';
 import type { ContentItem, SeriesGroup } from '@/types';
 
@@ -75,6 +76,13 @@ export default function HomePage() {
 
   // Buckets are memoised on the `items` identity, so this is free on re-render.
   const buckets = useMemo(() => getItemBuckets(), [items]);
+
+  // Daily shuffle for movies row — new order every day at midnight local time.
+  const shuffledMovies = useMemo(() => {
+    const shuffled = [...buckets.movie];
+    deterministicShuffle(shuffled);
+    return shuffled;
+  }, [buckets.movie]);
 
   // Channels known to be dead. The live row is a fixed slice of the bucket, so
   // without this the first few slots — and the hero, which prefers a live
@@ -267,7 +275,7 @@ export default function HomePage() {
           count={buckets.movie.length}
           large
           staggerIndex={ENTRY.movies}
-          items={buckets.movie.slice(0, ROW_LIMIT)}
+          items={shuffledMovies.slice(0, ROW_LIMIT)}
           href={ROUTES.movies}
           progressById={progressById}
           favoriteIds={favoriteIds}

@@ -7,7 +7,7 @@
  */
 import type { ContentItem, PlaybackProgress } from '@/types';
 
-export type SortKey = 'title' | 'recent' | 'year' | 'added';
+export type SortKey = 'title' | 'recent' | 'year' | 'added' | 'daily';
 
 export const SORT_OPTIONS: ReadonlyArray<{ value: SortKey; label: string }> = [
   { value: 'title', label: 'A–Z' },
@@ -16,6 +16,7 @@ export const SORT_OPTIONS: ReadonlyArray<{ value: SortKey; label: string }> = [
   // is the whole point of the option.
   { value: 'year', label: 'Newest first' },
   { value: 'added', label: 'Recently played' },
+  { value: 'daily', label: 'Daily shuffle' },
 ];
 
 export interface FilterState {
@@ -113,8 +114,33 @@ function sortItems(
         return pb - pa || a.name.localeCompare(b.name);
       });
       return;
+    case 'daily':
+      deterministicShuffle(items);
+      return;
     default:
       return;
+  }
+}
+
+/**
+ * Deterministic Fisher-Yates shuffle seeded by the current date (YYYYMMDD).
+ * The same day produces the same order; the order changes at midnight local time.
+ * This avoids Math.random() so SSR and hydration stay consistent.
+ */
+export function deterministicShuffle<T>(array: T[]): void {
+  const today = new Date();
+  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+  let state = seed;
+
+  // Simple LCG for deterministic pseudo-random numbers
+  function nextRandom(): number {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    return state / 0x100000000;
+  }
+
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(nextRandom() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
   }
 }
 
