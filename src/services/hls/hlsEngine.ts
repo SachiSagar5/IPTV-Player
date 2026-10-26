@@ -296,12 +296,12 @@ export class HlsEngine {
     if (probe) {
       const shape = classifySniffed(probe.shape);
       if (shape.kind === 'progressive') {
-        this.loadDirect(proxiedSource, options.startPosition, 'progressive');
+        this.loadDirect(source, options.startPosition, 'progressive');
         return;
       }
       if (shape.kind === 'unsupported') {
         // Try via proxy in case server-side transcoding is available
-        this.loadDirect(proxiedSource, options.startPosition, 'progressive');
+        this.loadDirect(source, options.startPosition, 'progressive');
         return;
       }
     }
@@ -309,7 +309,7 @@ export class HlsEngine {
     // Still unknown — the probe said nothing useful (rare) or refused to answer
     // (a provider without CORS headers). Either way, the historical behaviour is
     // the sane fallback: assume HLS and let the engine name the failure.
-    await this.loadWithHlsJs(proxiedSource, options, token);
+    await this.loadWithHlsJs(source, options, token);
   }
 
   private loadDirect(

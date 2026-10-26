@@ -87,6 +87,8 @@ export const PlayerControls = memo(function PlayerControls({
   audioTracks,
   currentAudioTrack,
   streamFeatures,
+  onShowControls,
+  onHideControls,
 }: PlayerControlsProps) {
   const [menu, setMenu] = useState<'none' | 'quality' | 'audio' | 'speed'>('none');
   const barRef = useRef<HTMLDivElement>(null);
@@ -145,7 +147,10 @@ export const PlayerControls = memo(function PlayerControls({
         visible ? 'opacity-100' : 'pointer-events-none opacity-0'
       }`}
       onMouseEnter={() => onShowControls?.()}
-      onMouseLeave={closeMenu}
+      onMouseLeave={() => {
+        closeMenu();
+        onHideControls?.();
+      }}
     >
       {/* Enhanced scrim with accent glow at top edge */}
       <div

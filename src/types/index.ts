@@ -195,6 +195,14 @@ export interface AppSettings {
    */
   omdbApiKey: string;
   /**
+   * Gate adult content behind a PIN.
+   *
+   * When enabled, the Adult tab is hidden until the parent unlocks it with the
+   * PIN stored under the `adultPin` key, and adult entries are filtered out of
+   * search, filters, and playlist listings. Defaults to off.
+   */
+  parentControls: boolean;
+  /**
    * Custom CORS proxy URL for mixed content (HTTPS page, HTTP stream).
    *
    * When set, this URL will be used instead of the built-in `/api/stream` endpoint.

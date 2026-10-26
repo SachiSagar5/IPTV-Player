@@ -16,7 +16,6 @@
 import { useCallback, useMemo, useRef } from 'react';
 import { Hero } from '@/components/cards/Hero';
 import { ContentRow, RowShell } from '@/components/cards/ContentRow';
-import { LARGE_CARD_WIDTH } from '@/components/cards/ContentCard';
 import { SeriesCard } from '@/components/cards/SeriesCard';
 import { PageEnd } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/common/States';
