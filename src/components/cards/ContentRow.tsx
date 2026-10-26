@@ -174,6 +174,11 @@ export function RowShell<T extends RowItem>({
         {href ? (
           <Link
             to={href}
+            // A remote could not reach this before: without `data-nav` it was
+            // not a stop, so the one control that opens the full catalog was
+            // pointer-only. On a TV that is the front door to Movies / Series /
+            // Live TV.
+            data-nav
             className="group/all hidden shrink-0 items-center gap-1 rounded-full border border-ink-700 bg-ink-900/70 py-1 pr-1.5 pl-3 text-xs font-medium text-mist-400 backdrop-blur-sm transition-colors hover:border-accent-600/60 hover:text-accent-300 sm:inline-flex"
           >
             Explore all

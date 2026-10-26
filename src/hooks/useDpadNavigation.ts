@@ -86,8 +86,18 @@ export function useDpadNavigation<T extends HTMLElement>(
 
       if (candidates.length === 0) return;
 
-      const currentIndex = candidates.indexOf(active);
-      if (currentIndex === -1) return;
+      /**
+       * A focused element does not have to be a D-pad stop itself.
+       *
+       * The header's mobile tab bar, a row's "Explore all" pill before it was
+       * opted in, and any plain link the browser happened to focus all sit
+       * inside this container without carrying `data-nav`. Baling out here is
+       * what made those states a dead end: the remote could focus them with
+       * Tab or the browser's own heuristics, and then arrows did nothing at
+       * all. Instead, treat them as a starting point and step to the nearest
+       * stop in the pressed direction.
+       */
+      const activeIsStop = candidates.includes(active);
 
       if (isHomeEnd) {
         event.preventDefault();
@@ -116,10 +126,20 @@ export function useDpadNavigation<T extends HTMLElement>(
         const dx = cx - currentCx;
 
         if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
-          // Same row: vertical centres must be within half a card height.
-          if (Math.abs(dy) > Math.max(rect.height, currentRect.height) * ROW_TOLERANCE) continue;
           const forward = event.key === 'ArrowRight' ? dx > 0 : dx < 0;
           if (!forward) continue;
+          if (!activeIsStop) {
+            // Unknown starting point: allow any row, but prefer a neighbour on
+            // the same line over one that is merely along the pressed axis.
+            const score = Math.abs(dx) + Math.abs(dy) * 2;
+            if (score < bestScore) {
+              bestScore = score;
+              best = el;
+            }
+            continue;
+          }
+          // Same row: vertical centres must be within half a card height.
+          if (Math.abs(dy) > Math.max(rect.height, currentRect.height) * ROW_TOLERANCE) continue;
           const distance = Math.abs(dx);
           if (distance < bestScore) {
             bestScore = distance;

@@ -206,6 +206,11 @@ export const TopNav = memo(function TopNav() {
               key={item.to}
               to={item.to}
               end={item.to === ROUTES.home}
+              // These are the only primary navigation at widths where the bar
+              // above is hidden — which includes TV viewports narrower than
+              // `lg`. As plain links they were focusable but not D-pad stops,
+              // so a remote landing on one could not move again.
+              data-nav
               className={({ isActive }) =>
                 `relative flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors ${
                   isActive ? 'text-accent-300' : 'text-mist-500'
