@@ -87,7 +87,7 @@ const pwaPlugins = isNativeBuild
   ];
 
 export default defineConfig({
-  base: process.env.GITHUB_PAGES === 'true' ? '/IPTV-Player/' : './',
+  base: './',
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -101,7 +101,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api/stream': {
-        target: 'https://iptvplayer-ebon.vercel.app',
+        target: process.env.VITE_CORS_PROXY || 'https://iptvplayer-ebon.vercel.app',
         changeOrigin: true,
         secure: true,
         rewrite: (path) => path.replace(/^\/api\/stream/, '/api/stream'),
