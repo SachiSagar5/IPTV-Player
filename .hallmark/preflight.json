@@ -1,0 +1,12 @@
+{
+  "scanned": "2026-11-20",
+  "findings": {
+    "fonts": "platform UI stack, no web fonts (src/index.css L11-16); --font-mono SF Mono/Menlo",
+    "palette": "Tailwind v4 @theme tokens: ink-1000…ink-500, mist-50…mist-600, accent-300…accent-700 (stock #8b5cf6 at accent-500), live/amber signals (src/index.css L20-60)",
+    "motion": "CSS keyframes only (fade-in, slide-up, scale-in, rise, ken-burns, pulse-soft, sheen, drift-a/b) + --ease-settle/--ease-present (src/index.css L69-70, L505-650); no motion library in package.json",
+    "spacing": "Tailwind v4 default 4pt scale; --radius-card 0.5rem, --radius-panel 0.75rem (src/index.css L51-52)",
+    "framework": "Vite 7 + React 19 + react-router-dom 7 + Tailwind v4 via @tailwindcss/vite; vite-plugin-pwa, hls.js, @tanstack/react-virtual, Capacitor"
+  },
+  "preserve": ["token architecture (@theme + :root RGB triplets)", "spacing scale", "route tree and component boundaries"],
+  "introduce": ["theme (Midnight)", "palette and type", "shape", "chrome", "gates", "signature"]
+}

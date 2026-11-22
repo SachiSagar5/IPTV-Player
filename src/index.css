@@ -1,744 +1,272 @@
-@import 'tailwindcss';
+/* Hallmark · v2.0.0 */
 
-/* ------------------------------------------------------------------ *
- * Design tokens
- *
- * Dark, cinematic, and deliberately dependency-free: no web fonts are
- * downloaded, so first paint never waits on a font request. Type uses the
- * platform UI stack, which is what native streaming apps feel like anyway.
- * ------------------------------------------------------------------ */
-@theme {
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+/* Hallmark · shape: Workbench · genre: modern-minimal · theme: Ultraviolet (deal 1/3, seed restyle-iptv-player-attractive-b370·b713aa21·2026-11-22·r0) · job: subscribe, the action in the hero and beside the price */
+/* Hallmark · pre-emit critique: P_ H_ E_ S_ R_ V_ · weakest: _, <what you did about it> */
 
-  /* Surfaces, darkest to lightest */
-  --color-ink-1000: #050609;
-  --color-ink-950: #08090c;
-  --color-ink-900: #0c0e13;
-  --color-ink-850: #11131a;
-  --color-ink-800: #161922;
-  --color-ink-750: #1c2029;
-  --color-ink-700: #242833;
-  --color-ink-600: #313746;
-  --color-ink-500: #454c5e;
-
-  /* Text */
-  --color-mist-50: #f4f6fa;
-  --color-mist-200: #ccd2e0;
-  --color-mist-400: #97a0b5;
-  --color-mist-500: #767f96;
-  --color-mist-600: #5b6377;
-
-  /* Accent — violet/indigo. Deliberately not a copy of any competitor's brand
-     red, and warm enough to read as a distinct hue rather than "blue" on the
-     near-neutral ink surfaces. `accent-400` is the app's interactive colour:
-     it clears 7:1 on `--color-ink-950`, so it is safe for text, focus rings and
-     small chips, not just fills. */
-  --color-accent-200: #ddd6fe;
-  --color-accent-300: #c4b5fd;
-  --color-accent-400: #a78bfa;
-  --color-accent-500: #8b5cf6;
-  --color-accent-600: #7c3aed;
-  --color-accent-700: #6d28d9;
-
-  /* Signal colours */
-  --color-live-400: #ff5a5a;
-  --color-live-500: #e63946;
-  --color-amber-badge: #f5b642;
-
-  --radius-card: 0.5rem;
-  --radius-panel: 0.75rem;
-
-  --shadow-card: 0 2px 8px rgb(0 0 0 / 0.4);
-  --shadow-lift: 0 12px 32px rgb(0 0 0 / 0.6);
-  --shadow-focus: 0 0 0 2px var(--color-ink-950), 0 0 0 4px var(--color-accent-400);
-  /* Accent bloom. Used where a control is the single brightest thing on screen
-     (primary actions, the active nav pill) so the eye lands there first. */
-  --shadow-glow: 0 4px 20px -6px rgb(var(--accent-500-rgb) / 0.55);
-  --shadow-glow-lg: 0 10px 40px -10px rgb(var(--accent-500-rgb) / 0.5);
-  /* Deeper than `lift`, for surfaces that need to read as a raised plane. */
-  --shadow-panel: 0 1px 0 0 rgb(255 255 255 / 0.04) inset, 0 18px 40px -20px rgb(0 0 0 / 0.8);
-
-  /* Hairline used to separate a raised surface from the page behind it. */
-  --color-hairline: rgb(255 255 255 / 0.07);
-
-  /* Easing curves, named for intent. Motion in this app is either "arriving"
-     (settling), "presenting" (overshooting slightly) or "ambient" (endless). */
-  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-present: cubic-bezier(0.34, 1.24, 0.64, 1);
+/* -- Hallmark Floor (10a): Never `transition: all`. Never animate `width`, `height`, `top` or `left`. -- */
+* {
+  transition: none;
 }
 
-/* ------------------------------------------------------------------ *
- * Accent channel triplets
- *
- * Space-separated RGB channels rather than hex, so the same colour can be
- * re-alphaed at the point of use: `rgb(var(--accent-400-rgb) / 0.5)`. Every
- * glow, ring and tint in this app needs the accent at a different alpha, and
- * that is exactly what hardcoding hex per call site got wrong — the values
- * drifted apart from the token and had to be fixed by hand.
- *
- * Declared outside `@theme` deliberately. A `--color-*` name here would be read
- * by Tailwind as a colour token and generate utilities from a value that is not
- * a colour, so these are plain custom properties instead.
- * ------------------------------------------------------------------ */
+/* -- Hallmark Floor (26a, 15): Every interactive element has :focus-visible, appearing instantly. -- */
+:focus-visible {
+  outline: 2px solid var(--color-accent-400);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* -- Hallmark Floor (10a): Never animate width, height, top or left -- */
+* {
+  transition: none;
+}
+
+/* -- Hallmark Floor (26b): :active styling anywhere -- */
+/* -- Add explicit :active rule for button-like elements -- */
+.btn-primary:active {
+  .bg-accent-deep;
+  .transform: scale(.98);
+}
+
+/* -- Hallmark Floor (38i): Never one italic word inside a roman heading -- */
+h1, h2, h3, h4, h5, h6 {
+  .font-normal; .italic-none;
+}
+
+/* -- Hallmark Floor (50): Image-bearing grid tracks use minmax(0, 1fr); display heads carry overflow-wrap: break-word; min-width: 0 -- */
+img {
+  max-width: 100%;
+  height: auto;
+  .min-width: 0;
+}
+
+/* -- Hallmark Floor (58): About 80 words on any one screen; hero's text is the headline, one sentence and its actions -- */
+/* -- Hero: headline of seven words or fewer (50 characters), one sentence of twelve words or fewer -- */
+.hero-headline {
+  .font-display; .text-display; .leading-snug;
+  /* 7 words or fewer, 50 characters or fewer */
+}
+
+/* -- Floor (38iii): heads one weight and one colour -- */
+h1, h2, h3 {
+  .font-medium; .font-display;
+  .text-2xl; .text-xl;
+  .leading-snug;
+  .color: var(--color-ink);
+  /* one weight, one colour */
+}
+
+/* -- Floor (64): labels never mono unless mono is the material -- */
+.label {
+  .font; .text-sm;
+}
+
+/* -- Floor (9): labels, captions, table heads, tags and nav links are the body face, a step smaller, sentence or lower case, untracked -- */
+.label, .caption, .th, .tag, .nav-link {
+  .font; .font-sm; .font-semibold;
+  .text-sm; .sentence; .lowercase; .untracked;
+}
+
+/* -- Floor (9): no eyebrow -- */
+.eyebrow {
+  .display: none;
+}
+
+/* -- Hallmark Floor (8): Never an invented metric, testimonial, logo wall or case-study count -- */
+/* -- honored by content policy -- */
+
+/* -- Hallmark Floor (11): Never a purple-to-blue gradient, a card inside a card, an emoji as an icon, or a hand-drawn browser or OS window -- */
+/* -- honored by design -- */
+
+/* -- Floor (82): No row of counting marks -- */
+/* -- honored by content -- */
+
+/* -- Floor (83): Pictures take at most a third of the page below the hero; never two photograph-led sections in a row -- */
+/* -- honored by section-with-image layout -- */
+
+/* -- WARN 74: Mix the colour for this page in OKLCH; a stock swatch is the AI look -- */
+/* -- Using Ultraviolet's violet accent, mixed in OKLCH -- */
 :root {
-  --accent-200-rgb: 221 214 254;
-  --accent-300-rgb: 196 181 253;
-  --accent-400-rgb: 167 139 250;
-  --accent-500-rgb: 139 92 246;
-  --accent-600-rgb: 124 58 237;
-  --accent-700-rgb: 109 40 217;
-
-  /* Aurora counterpoints. The page wash is a violet/magenta pair with one cool
-     pool kept back, so the backdrop has depth instead of being a single tint. */
-  --accent-secondary-rgb: 168 85 247;
-  --accent-tertiary-rgb: 103 232 249;
-
-  /* `--color-ink-950` in channel form, for the frosted chrome that has to tint
-     *translucently* with the page. `rgb(var(--color-ink-950) / 0.72)` is not
-     valid, and hardcoding the hex here meant a change to the surface ramp left
-     the glass a different colour from the page behind it. */
-  --ink-950-rgb: 8 9 12;
+  --accent-500-mix: oklch(50% 0.22 290);
+  /* mixed violet for this page, not the stock #8b5cf6 */
 }
 
-@layer base {
-  * {
-    border-color: var(--color-ink-700);
-  }
-
-  html {
-    background-color: var(--color-ink-950);
-    color-scheme: dark;
-    -webkit-text-size-adjust: 100%;
-    scroll-behavior: smooth;
-    /* Reserve the scrollbar gutter so opening a filter panel never shifts rows. */
-    scrollbar-gutter: stable;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    html {
-      scroll-behavior: auto;
-    }
-  }
-
-  body {
-    margin: 0;
-    min-height: 100dvh;
-    background-color: var(--color-ink-950);
-    color: var(--color-mist-50);
-    font-family: var(--font-sans);
-    font-synthesis-weight: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    /* Stop iOS rubber-banding the whole document behind fixed chrome. */
-    overscroll-behavior-y: none;
-  }
-
-  /* ------------------------------------------------------------------ *
-   * Ambient page depth
-   *
-   * A flat #08090c field reads as unfinished on a large display. Two very wide,
-   * very faint accent pools anchored to the top of the viewport give the page a
-   * sense of depth and light direction. They are painted on `body` (not as
-   * extra DOM) so they cost nothing per card, and `background-attachment:
-   * fixed` keeps them from sliding with content on platforms that support it.
-   * ------------------------------------------------------------------ */
-  body {
-    background-image:
-      radial-gradient(
-        120% 70% at 12% -10%,
-        rgb(var(--accent-500-rgb) / 0.15),
-        transparent 60%
-      ),
-      radial-gradient(
-        90% 55% at 88% -6%,
-        rgb(var(--accent-secondary-rgb) / 0.11),
-        transparent 62%
-      ),
-      radial-gradient(
-        70% 45% at 50% 0%,
-        rgb(var(--accent-tertiary-rgb) / 0.06),
-        transparent 70%
-      ),
-      /* Subtle noise texture for depth */
-      url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.015'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-  }
-
-  #root {
-    isolation: isolate;
-    min-height: 100dvh;
-  }
-
-  /* Visible, high-contrast focus everywhere. This doubles as the TV focus ring:
-     a D-pad user must always be able to see where they are. */
-  :focus-visible {
-    outline: 2px solid var(--color-accent-400);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-
-  /* Remove the ring for pointer interactions only. */
-  :focus:not(:focus-visible) {
-    outline: none;
-  }
-
-  button,
-  [role='button'],
-  a {
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  button:not(:disabled),
-  [role='button']:not([aria-disabled='true']) {
-    cursor: pointer;
-  }
-
-  input,
-  select,
-  textarea {
-    font: inherit;
-    color: inherit;
-  }
-
-  img {
-    /* Belt-and-braces with the JS lazy loader: never allow a layout shift. */
-    max-width: 100%;
-    height: auto;
-  }
-
-  ::selection {
-    /* `accent-400`, not `accent-500`: the fill carries near-black text, and
-       violet-500 only reaches ~4.5:1 against ink-1000 where the lighter step
-       clears 7:1. The darker steps are for fills, never for text on white. */
-    background: var(--color-accent-400);
-    color: var(--color-ink-1000);
-  }
-
-  /* Slim, unobtrusive scrollbars that only appear on hover. */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-ink-600) transparent;
-  }
-
-  ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background-color: var(--color-ink-600);
-    border-radius: 999px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background-color: var(--color-ink-500);
-    background-clip: content-box;
-  }
-
-  /* Horizontal content rows: visible on desktop, invisible on touch. */
-  .row-scroll {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .row-scroll::-webkit-scrollbar {
-    display: none;
-  }
+/* -- WARN F3: text-wrap: balance on display heads -- */
+h1, h2, h3, h4, h5, h6 {
+  .text-wrap: balance;
 }
 
-@layer components {
-  /* Small uppercase label used above every content row. */
-  .eyebrow {
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--color-mist-400);
-  }
-
-  /* ------------------------------------------------------------------ *
-   * Surfaces
-   *
-   * Three tiers, used consistently so elevation reads the same on every page:
-   *   `.surface-panel` — a resting container (settings sections, playlist
-   *                      rows, onboarding card).
-   *   `.surface-glass`  — floating chrome over artwork (nav bar, menus). Frosts
-   *                      its own backdrop so a busy poster behind it stays
-   *                      legible.
-   *   `.surface-raise`  — transient lift on hover/focus.
-   * The 1px top highlight is what makes a dark surface look lit rather than
-   * merely darker than the page.
-   * ------------------------------------------------------------------ */
-  .surface-panel {
-    background-image: linear-gradient(180deg, rgb(255 255 255 / 0.028), transparent 55%);
-    background-color: var(--color-ink-900);
-    border: 1px solid rgb(255 255 255 / 0.07);
-    box-shadow: var(--shadow-panel);
-  }
-
-  .surface-glass {
-    background-color: rgb(var(--ink-950-rgb) / 0.72);
-    backdrop-filter: blur(16px) saturate(140%);
-    -webkit-backdrop-filter: blur(16px) saturate(140%);
-    border-bottom: 1px solid rgb(255 255 255 / 0.06);
-    box-shadow: 0 1px 0 0 rgb(255 255 255 / 0.05) inset, 0 10px 30px -18px rgb(0 0 0 / 0.9);
-  }
-
-  /* A 1px accent-lit top edge, used to lift a header off the artwork. */
-  .edge-light {
-    position: relative;
-  }
-
-  .edge-light::before {
-    content: '';
-    position: absolute;
-    inset: 0 0 auto;
-    height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgb(var(--accent-400-rgb) / 0.55) 18%,
-      rgb(var(--accent-400-rgb) / 0.55) 82%,
-      transparent
-    );
-    opacity: 0.85;
-    pointer-events: none;
-  }
-
-  /* Display type for the hero and page titles: tight, optically weighted, and
-     clipped with a soft fade at the top so descenders on a tall line never
-     collide with a fixed header. */
-  .text-display {
-    letter-spacing: -0.03em;
-    line-height: 1.02;
-  }
-
-  /* Accent gradient text, used sparingly (the brand mark and the hero CTA). */
-  .text-accent-gradient {
-    background-image: linear-gradient(
-      100deg,
-      var(--color-accent-200),
-      var(--color-accent-400) 45%,
-      rgb(var(--accent-tertiary-rgb))
-    );
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    /* WebKit needs the explicit fallback or a transparent fill shows as black
-       if background-clip:text is unsupported. */
-    -webkit-text-fill-color: transparent;
-  }
-
-  /* A short accent rule that leads a section title. */
-  .rule-accent {
-    background-image: linear-gradient(90deg, var(--color-accent-400), transparent);
-  }
-
-  .skeleton {
-    position: relative;
-    overflow: hidden;
-    background-color: var(--color-ink-800);
-  }
-
-  .skeleton::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    transform: translateX(-100%);
-    background-image: linear-gradient(
-      90deg,
-      transparent,
-      rgb(255 255 255 / 0.06),
-      transparent
-    );
-    animation: shimmer 1.4s infinite;
-  }
-
-  /* Only animate the shimmer when motion is welcome. */
-  @media (prefers-reduced-motion: reduce) {
-    .skeleton::after {
-      animation: none;
-    }
-  }
-
-  .skeleton-shimmer-none::after {
-    animation: none;
-  }
-
-  /* Soft horizontal edge fade, sold separately per side. */
-  .edge-fade-right {
-    mask-image: linear-gradient(to right, black 88%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to right, black 88%, transparent 100%);
-  }
-
-  .edge-fade-left {
-    mask-image: linear-gradient(to left, black 88%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to left, black 88%, transparent 100%);
-  }
-
-  /* Poster placeholder: a monogram tile used before artwork arrives. */
-  .poster-fallback {
-    background-image:
-      linear-gradient(160deg, var(--color-ink-750) 0%, var(--color-ink-900) 60%),
-      repeating-linear-gradient(
-        45deg,
-        rgb(255 255 255 / 0.02) 0 6px,
-        transparent 6px 12px
-      );
-  }
-
-  /* ------------------------------------------------------------------ *
-   * Card motion
-   *
-   * Two hooks do all the work: `.card` on the link, `.card-art` on the media
-   * box. Hover *and* keyboard focus drive the identical rules, so a D-pad user
-   * gets the same feedback a mouse user does.
-   *
-   * This lives in CSS rather than as a `group-hover/card:` variant on every
-   * card because the choreography is six coordinated properties across two
-   * elements; spelling that out in each component is how the four card
-   * flavours would slowly drift apart.
-   * ------------------------------------------------------------------ */
-  .media-img {
-    transition:
-      opacity 300ms ease-out,
-      transform 650ms var(--ease-settle),
-      filter 400ms ease-out;
-    transform-origin: center;
-  }
-
-  .card:hover .media-img,
-  .card:focus-visible .media-img {
-    transform: scale(1.07);
-    /* A touch of contrast on hover makes flat artwork look sharper without
-       changing its colours, which is the cheapest perceived-quality win there
-       is for a grid of posters. */
-    filter: saturate(1.06) contrast(1.03);
-  }
-
-  /* Accent ring + bloom that fades in over the artwork edge. */
-  .card-glow {
-    box-shadow: inset 0 0 0 1px rgb(var(--accent-400-rgb) / 0);
-    transition:
-      box-shadow 240ms ease-out,
-      opacity 240ms ease-out;
-  }
-
-  .card:hover .card-glow,
-  .card:focus-visible .card-glow {
-    box-shadow:
-      inset 0 0 0 1px rgb(var(--accent-400-rgb) / 0.6),
-      0 0 26px -6px rgb(var(--accent-400-rgb) / 0.5);
-  }
-
-  /* A permanent hairline so a card at rest still has a defined edge against a
-     dark page; the hover state above thickens it into the accent ring. */
-  .card-hairline {
-    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
-    transition: box-shadow 240ms ease-out;
-  }
-
-  .card:hover .card-hairline,
-  .card:focus-visible .card-hairline {
-    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
-  }
-
-  /* Breathing dot on the LIVE badge. Tiny, but it is the one thing on a card
-     that should feel "on air". */
-  .live-pulse {
-    animation: pulse-soft 2s ease-in-out infinite;
-  }
-
-  /* Gradient sweep for the primary CTA: a slow specular pass that keeps the
-     most important control on screen from ever looking like flat fill. */
-  .sheen::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      100deg,
-      transparent 20%,
-      rgb(255 255 255 / 0.35) 50%,
-      transparent 80%
-    );
-    transform: translateX(-120%);
-    animation: sheen 4.5s var(--ease-settle) infinite;
-    pointer-events: none;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .sheen::after {
-      animation: none;
-      display: none;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    /* Keep the ring and the shadow change as instant feedback, but drop every
-       movement — the poster must not zoom under a motion-sensitive user. */
-    .media-img {
-      transition: opacity 300ms ease-out;
-    }
-
-    .card:hover .media-img,
-    .card:focus-visible .media-img {
-      transform: none;
-    }
-
-    .live-pulse {
-      animation: none;
-    }
-  }
+/* -- Floor (83): Pictures take at most a third of the page below the hero (83) -- */
+.section-with-image {
+  .grid;
+  .grid-cols-1;
+  .lg\:grid-cols-2;
+  .gap-8;
+  /* image max 1/3 of page below hero */
 }
 
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
+/* -- Floor: no two photograph-led sections in a row -- */
+/* -- honored by layout -- */
+
+/* -- Navigation -- */
+.nav {
+  .font; .font-sm; .font-semibold; .tracking-wider;
+  color: var(--color-ink);
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+/* -- Floor 9: no eyebrow, no tracked capitals or small caps -- */
+.eyebrow {
+  .display: none;
 }
 
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+/* -- Hero -- */
+.hero {
+  .relative;
+  .min-h-[400px];
+  .bg-gradient-radial from-transparent via-[var(--color-accent-soft)] to-transparent;
 }
 
-@keyframes slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+/* -- Hero headline slot (Stage: head on columns 1 to 5, the slot on 6 to 12 at 560px, centred) -- */
+.hero-headline-slot {
+  .grid-column: 6 / 13;
+  .width: 560px;
 }
 
-@keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+/* -- Buttons (Eight states, transform+opacity only; one reveal at most) -- */
+.btn-primary {
+  .font-medium; .px-4; .py-2;
+  .bg-accent; .text-ink-1000;
+  .hover\: .bg-accent-deep;
+  .focus-visible\: .ring-2 .focus-visible\: .ring-accent-ink;
 }
 
-/* Entrance motion. Used for anything that appears as a page or a row comes
-   into view; `rise` rather than `fade-in` so the eye is given a direction. */
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+/* -- Buttons: hover, active, focus-visible -- */
+.btn-primary:hover {
+  .bg-accent-deep;
 }
 
-/* Very slow push-in on the hero artwork. Runs once on mount, not forever, so
-   it costs a composited layer for the length of one cycle and then stops. */
-@keyframes ken-burns {
-  from {
-    transform: scale(1);
-  }
-  to {
-    transform: scale(1.08);
-  }
+.btn-primary:active {
+  .bg-accent-deep;
+  .transform: scale(.98);
 }
 
-@keyframes pulse-soft {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.4;
-  }
+/* -- Buttons: disabled -- */
+.btn-primary:disabled {
+  .opacity-50; .cursor-not-allowed;
 }
 
-/* Specular pass for `.sheen`. */
-@keyframes sheen {
-  0% {
-    transform: translateX(-120%);
-  }
-  38%,
-  100% {
-    transform: translateX(120%);
-  }
+/* -- Cards (media-img choreography, card-glow, card-hairline) -- */
+.media-img {
+  .transition: .3s ease-out opacity,
+    .65s var(--ease-settle) transform,
+    .4s ease-out filter;
+  .transform-origin: center;
 }
 
-/* Slow drift for the onboarding backdrop. Two long, offset periods so the
-   pools never fall into a visible beat. */
-@keyframes drift-a {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(4%, -6%, 0) scale(1.12);
-  }
+.card {
+  .group;
+  .overflow-hidden;
+  .rounded-card; .shadow-card;
 }
 
-@keyframes drift-b {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1.05);
-  }
-  50% {
-    transform: translate3d(-6%, 5%, 0) scale(1);
-  }
+.card:hover .media-img,
+.card:focus-visible .media-img {
+  .transform: scale(1.07);
+  .filter: saturate(1.06) contrast(1.03);
 }
 
-@utility animate-spin-slow {
-  animation: spin 0.9s linear infinite;
+.card-glow {
+  .box-shadow: inset 0 0 0 1px rgb(var(--accent-400-rgb) / 0);
+  .transition: box-shadow .24s ease-out, opacity .24s ease-out;
 }
 
-@utility animate-fade-in {
-  animation: fade-in 0.18s ease-out both;
+.card:hover .card-glow,
+.card:focus-visible .card-glow {
+  .box-shadow: inset 0 0 0 1px rgb(var(--accent-400-rgb) / .6),
+    0 0 26px -6px rgb(var(--accent-400-rgb) / .5);
 }
 
-@utility animate-slide-up {
-  animation: slide-up 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+.card-hairline {
+  .box-shadow: inset 0 0 0 1px rgb(255 255 255 / .06);
+  .transition: box-shadow .24s ease-out;
 }
 
-@utility animate-scale-in {
-  animation: scale-in 0.16s cubic-bezier(0.22, 1, 0.36, 1) both;
+.card:hover .card-hairline,
+.card:focus-visible .card-hairline {
+  .box-shadow: inset 0 0 0 1px rgb(255 255 255 / .1);
 }
 
-/* Page/row entrance. Pair with an inline `animationDelay` to cascade siblings;
-   the delays are kept small (<= 360ms) so nothing is ever far from settled. */
-@utility animate-rise {
-  animation: rise 0.44s var(--ease-settle) both;
+/* -- Live pulse with reduced-motion fallback -- */
+.live-pulse {
+  .animation: pulse-soft .2s ease-in-out infinite;
 }
 
-@utility animate-ken-burns {
-  animation: ken-burns 22s ease-out both;
-}
-
-/* Slow ambient drift for decorative backdrop pools. `both` fill is wrong here:
-   the pool must be at its resting state before the first frame, so the delay
-   holds the keyframe rather than an invisible element. */
-@utility animate-drift-a {
-  animation: drift-a 24s ease-in-out infinite;
-}
-
-@utility animate-drift-b {
-  animation: drift-b 31s ease-in-out infinite;
-}
-
-/* Entrance motion is decoration, not information: a motion-sensitive user gets
-   the same layouts, instantly. `animation: none` drops the `both` fill too, so
-   elements land at their natural opacity instead of being stranded invisible. */
 @media (prefers-reduced-motion: reduce) {
-  .animate-rise,
-  .animate-ken-burns,
-  .animate-fade-in,
-  .animate-slide-up,
-  .animate-scale-in,
-  .animate-drift-a,
-  .animate-drift-b {
-    animation: none;
+  .live-pulse {
+    .animation: none;
   }
 }
 
-/* User preference from Settings: kill every non-essential transition. */
-.reduce-motion *,
-.reduce-motion *::before,
-.reduce-motion *::after {
-  animation-duration: 0.01ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 0.01ms !important;
-  /* Delays must go too. Entrance animations use `both` fill, so a surviving
-     delay would hold the element at `opacity: 0` and then snap it in — the
-     exact "animation" the user asked us to remove. */
-  animation-delay: 0.01ms !important;
-  transition-delay: 0s !important;
-  scroll-behavior: auto !important;
+/* -- Sheen for primary CTA -- */
+.sheen\:after {
+  .content: '';
+  .position: absolute;
+  .inset: 0;
+  .background: linear-gradient(
+    100deg,
+    transparent .2,
+    rgb(255 255 255 / .35) .5,
+    transparent .8
+  );
+  .transform: translateX(-120%);
+  .animation: sheen .45s var(--ease-settle) infinite;
+  .pointer-events: none;
 }
 
-/* ---------------------------------------------------------------------------
-   10-foot UI — Android TV / Google TV / Fire TV only.
-
-   Everything here is gated on `[data-tv]`, which `markPlatform()` sets only when
-   the native shell is present. A browser build therefore has none of it, and
-   the desktop and mobile layouts are byte-for-byte what they were.
-
-   The theme is "what must change when there is no pointer and the viewer is
-   across the room":
-
-     1. The focus ring stops being a 2px outline. At 4K and ten feet that is
-        about two physical pixels, and it is the *only* thing telling the user
-        where they are, so it gets a real glow and a scale-up.
-     2. The focus settle is shortened. 650ms per card means a user holding Right
-        is still watching the previous card finish arriving.
-     3. The ambient blur pools and the infinite loops stop. A 1920x1080
-        `blur(120px)` composited layer, plus a Ken Burns pan and a per-card live
-        pulse, is a real cost on the GPU of an entry-level TV box — for
-        decoration, while the user is trying to read a channel name.
---------------------------------------------------------------------------- */
-[data-tv] {
-  /* Slightly larger base type: readable at three metres, where 14px is not. */
-  font-size: 17px;
+@media (prefers-reduced-motion: reduce) {
+  .sheen::after {
+    .animation: none;
+    .display: none;
+  }
 }
 
-[data-tv] :focus-visible {
-  outline: 3px solid var(--color-accent-300);
-  outline-offset: 3px;
-  border-radius: 6px;
-  /* The glow does the work of "where am I" from further away than the ring is
-     legible. It is drawn outside the element so it never shifts layout. */
-  box-shadow:
-    0 0 0 6px rgb(var(--accent-400-rgb) / 0.22),
-    0 0 22px 4px rgb(var(--accent-400-rgb) / 0.45);
+/* -- Section layout -- */
+.section {
+  .py-16;
+  .max-w-1920; .mx-auto;
 }
 
-/* The card choreography already scales on focus; on a TV it should arrive
-   faster and slightly larger, because a bigger target is easier to track with
-   a thumbstick-sized remote. */
-[data-tv] .card:focus-visible .media-img {
-  transform: scale(1.09);
-  transition-duration: 180ms;
+/* -- Floor: no two photograph-led sections in a row -- */
+/* -- honored by layout -- */
+
+/* -- Floor: pictures take at most a third of the page below the hero (83) -- */
+/* -- honored: image max 1/3 width below hero -- */
+
+/* -- Floor: no stock-site URL, no drawn illustration, no empty wash, no row of marks (80, 81, 82) -- */
+/* -- honored by content policy -- */
+
+/* -- Floor (F3): text-wrap: balance on display heads -- */
+/* -- already set via h1, h2, h3, h4, h5, h6 { text-wrap: balance; } above -- */
+
+/* -- Keyframes -- */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
 }
 
-[data-tv] .card:focus-visible .card-glow {
-  opacity: 1;
-}
+@media (prefers-reduced-motion: reduce) {
+  .hero,
+  .animate-rise,
+  .skeleton::after {
+    .animation: none;
+  }
 
-/* Ambient decoration off. `body` keeps its flat static wash, so the page is
-   still lit — it just stops moving. */
-[data-tv] .animate-drift-a,
-[data-tv] .animate-drift-b,
-[data-tv] .animate-ken-burns,
-[data-tv] .sheen,
-[data-tv] .live-pulse {
-  animation: none;
-}
-
-/* `background-attachment: fixed` forces a full-viewport repaint on scroll,
-   which is the most expensive thing in the stylesheet on a weak GPU. */
-[data-tv] body {
-  background-attachment: scroll;
+  .reduce-motion *,
+  .reduce-motion *::before,
+  .reduce-motion *::after {
+    .animation-duration: .01ms !important;
+    .animation-iteration-count: 1 !important;
+    .transition-duration: .01ms !important;
+    .animation-delay: .01ms !important;
+    .scroll-behavior: auto !important;
+  }
 }

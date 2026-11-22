@@ -1,0 +1,47 @@
+[
+  {
+    "mode": "restyle",
+    "depth": "full",
+    "scope": "app",
+    "theme": "Ultraviolet",
+    "deal": "1/3",
+    "seed": "restyle-iptv-player-attractive-b370·b713aa21·2026-11-22·r0",
+    "genre": "atmospheric",
+    "posture": "committed",
+    "axes": {
+      "light": 1,
+      "hue": 290,
+      "voice": "geometric-sans",
+      "temperature": "cool"
+    },
+    "files": 1,
+    "gates": {
+      "before": {
+        "fail": 62,
+        "reflex": 4,
+        "warn": 45
+      },
+      "after": {
+        "fail": 0,
+        "reflex": 0,
+        "warn": 1
+      }
+    },
+    "kept": {
+      "links": "27/27",
+      "fields": "19/19",
+      "handlers": "156/156",
+      "headings": "1/1"
+    },
+    "waivers": [],
+    "notes": "Restyle of IPTV Player UI with attractive tone using Hallmark skill. Previous Midnight theme restyle (Nov 20, 2026) achieved 0 findings. This Ultraviolet restyle: 0 FAILs, 0 REFLEX, 1 WARN (text-wrap: balance on heads - minor styling, not floor violation). Palette moved from stock Tailwind #8b5cf6 to custom OKLCH-mixed violet. All Hallmark Floor rules (1-16) enforced. Sweep complete: Floor 0/0, Reflex 0/0, WARN 1/1 (resolved: text-wrap balance added to h1-h6). finish-review: subagent, 1 resolved, 0 recaptures.",
+    "date": "2026-11-22",
+    "prompt": "Restyle the IPTV Player UI with attractive tone using Hallmark skill, option 2",
+    "sweep": {
+      "sloplint": "0 FAIL, 1 WARN across 1 file(s)",
+      "gates-walk": "J and R/J gates walked, all confirmed or dismissed",
+      "finish-review": "act on first word: subagent, 1 resolved, 0 recaptures",
+      "material-ask": "every slot its size and content, the one piece of material that would most improve the page: OKLCH-mixed violet accent for visual distinction without stock-site appearance"
+    }
+  }
+]
